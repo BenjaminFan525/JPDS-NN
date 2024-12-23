@@ -1,0 +1,3 @@
+adv_estimation_method: gae
+gamma: 0.99
+target_kl: 0.01

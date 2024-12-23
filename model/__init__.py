@@ -1,0 +1,1 @@
+from model.GNNs import GNNWithEdge,  ClusterGNN

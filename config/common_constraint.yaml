@@ -1,0 +1,24 @@
+max_grad_norm: 0.5
+batch_size: 32
+actor_lr: 0.0001 
+critic_lr: 0.0001
+ac_config: /home/xuht/Intelligent-Agriculture/ia/algo/arrangement/configs/ac.yaml
+gnn_pretrain: True
+gnn_checkpoint: /home/xuht/Intelligent-Agriculture/ia/algo/arrangement/runs/2024-02-03__00-13_layer_4/best_model511.pt
+gnn_freeze_epochs: 2
+anneal: True
+anneal_final: 0.1
+reward_coef:
+  s: 0.01
+  t: 0.01
+  c: 1
+valid_every: 20
+cost_coef:
+  t: 1.5
+  c: 1.1
+cost_limits:
+  t: AC_t.json
+  c: AC_c.json
+cost_val_limits:
+  t: 2366.085133990411
+  c: 48.81114325470838

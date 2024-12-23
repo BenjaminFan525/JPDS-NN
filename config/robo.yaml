@@ -1,0 +1,7 @@
+robo1:
+  car_model: car3
+  c_w: 0.01
+  c_f: cost driving (L/s)
+  t_t: average turning time (s)
+  v_w: working speed (m/s)
+  v_f: driving speed (m/s)

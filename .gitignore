@@ -1,0 +1,23 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# C extensions
+*.so
+
+
+data/Gdataset
+result
+*.zip
+
+*/logs
+
+*.catkin_tools
+*.vscode
+*.csv
+
+*runs*
+
+*.png

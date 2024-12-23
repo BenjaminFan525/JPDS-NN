@@ -1,0 +1,90 @@
+car1:
+  f: 1 # 阻力（如果能区分作业时和空行时更好
+  t_D: 1 #
+  t_X: 0.2
+  t_theta: 0.3
+  k_D: 1
+  M: 10
+  L: 1
+  K: 0.5
+  L_f: 0.2
+  L_b: 0.2
+  D_max: 5
+  X_max: 15
+  theta_max: 0.79
+  inner_PID:
+    P_a: 10
+    D_a: 0.5
+    P_v: 20
+    D_v: 0.5
+    P_w: 10
+    D_w: 0.05
+    P_p: 30
+    D_p: 5
+  trail_ctrl_cfg:
+    P_ct: 6 
+    D_ct: 4 
+    P_at: 1 
+    D_at: 2 
+
+# ------------------------------------
+car2:
+  f: 5
+  t_D: 1
+  t_X: 0.2
+  t_theta: 0.3
+  k_D: 1
+  M: 100
+  L: 5
+  K: 3
+  L_f: 0.2
+  L_b: 0.2
+  D_max: 70
+  X_max: 150
+  theta_max: 0.79
+  inner_PID:
+    P_a: 10
+    D_a: 0.5
+    P_v: 20
+    D_v: 0.5
+    P_w: 10
+    D_w: 0.05
+    P_p: 30
+    D_p: 5
+  trail_ctrl_cfg:
+    P_ct: 6 
+    D_ct: 4 
+    P_at: 1 
+    D_at: 2 
+# ------------------------------------
+car3:
+  f: 100
+  t_D: 1
+  t_X: 0.2
+  t_theta: 0.3
+  k_D: 1
+  M: 2000
+  L: 2.884
+  K: 2.682
+  L_f: 0.2
+  L_b: 0.2
+  D_max: 1000
+  X_max: 5500
+  theta_max: 0.4756
+  inner_PID:
+    P_a: 10
+    D_a: 0.5
+    P_v: 20
+    D_v: 0.5
+    P_w: 10
+    D_w: 0.05
+    P_p: 30
+    D_p: 5
+  trail_ctrl_cfg:
+    P_ct: 6 
+    D_ct: 4 
+    P_at: 1 
+    D_at: 2 
+
+
+

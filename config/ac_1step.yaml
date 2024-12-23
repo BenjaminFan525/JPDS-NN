@@ -1,0 +1,47 @@
+common_cfg:
+  embed_dim: 64 
+  activation:  relu  
+
+encoder_cfg:
+  gnn_cfg:
+    gnn_cfg:
+      node_dim: 3  
+      edge_dim: 4  
+      embedding_layer: 1 
+      nhead: 4  
+      layer_num: 2  
+      dropout: 0.0
+      whole_batch_edge_processing: False  
+      edge_norm: True 
+    gff_cfg:
+      layer: 2
+  veh_dim: 5  
+  embedding_layer: 1  
+  enc_type: enc   
+  layer_num: 1  
+  nhead: 4  
+  cross_attn_en: False
+
+sel_encoder_cfg:
+  input_dim: 66  
+  nhead: 4  
+  veh_dim: 64 
+
+actor_cfg:
+  query_dim: 256  
+  nhead: 4 
+  ptr_fn: attn 
+
+# critic_cfg:
+#    query_dim: 256  
+#    nhead: 4 
+
+critic_cfg:
+   layer_num: 2
+
+single_step: True
+
+critic_list:
+  - s
+  - t
+  - c

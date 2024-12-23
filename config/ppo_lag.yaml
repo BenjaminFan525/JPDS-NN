@@ -1,0 +1,6 @@
+adv_estimation_method: gae
+gamma: 0.99
+use_linear_lr_decay: False
+train_pi_iterations: 3
+train_v_iterations: 3
+lagrangian_multiplier_init: 0.001

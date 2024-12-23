@@ -1,0 +1,19 @@
+common_cfg:
+  embed_dim: 64 
+  activation: relu 
+
+gnn_cfg:
+  node_dim: 3  
+  edge_dim: 4  
+  embedding_layer: 2
+  nhead: 4  
+  layer_num: 6
+  dropout: 0.1 
+  whole_batch_edge_processing: False  
+  edge_norm: True 
+
+ff_cfg:
+  sigmoid_tau: 5
+  output_dim: 
+    - 32 
+    - 16

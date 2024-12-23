@@ -1,0 +1,2 @@
+adv_estimation_method: gae
+gamma: 0.99
