@@ -205,7 +205,8 @@ class multiField():
                         self.working_graph.add_edge(node2, node1, 
                                                     dis=self.whole_D_matrix[idx2, idx1],
                                                     edge_embed=torch.Tensor(self.whole_D_matrix[idx1, idx2].flatten()))
-        self.ori = self.whole_D_matrix[self.num_veh:, :self.num_endpoints] # 各个 start 到各个作业行的距离矩阵
+        self.ori = self.whole_D_matrix[:self.num_veh, self.num_endpoints:] # 各个 start 到各个作业行的距离矩阵
+        self.des = self.whole_D_matrix[self.num_veh:self.num_endpoints, self.num_endpoints:] # 各个 end 到各个作业行的距离矩阵
         self.D_matrix = self.whole_D_matrix[self.num_endpoints:, self.num_endpoints:] # 各个作业行之间的距离矩阵
         self.line_length = np.array(self.line_length[self.num_endpoints:])
 
@@ -326,9 +327,9 @@ class multiField():
         if not cartesian:
             return path
 
-        if 'start' not in line1:
+        if 'start' not in line1 and 'end' not in line1:
             path[0] = np.append(path[0], self.working_graph.nodes[line1]['direction_angle' if entry1 == 1 else 'anti_direction_angle'])
-        if 'start' not in line2:
+        if 'start' not in line2 and 'end' not in line2:
             path[-1] = np.append(path[-1], self.working_graph.nodes[line2]['direction_angle' if entry2 == 0 else 'anti_direction_angle'])
 
         return path

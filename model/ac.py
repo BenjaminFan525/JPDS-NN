@@ -215,16 +215,14 @@ class MaGNNEncoder(Module):
             #    node_key_padding_mask = node_key_padding_mask[:, self.veh_dim:]
             
             veh_depot_attn = []
-            for idx in range(self.veh_dim):
+            for idx in range(veh.shape[1]):
                 mask = node_key_padding_mask.clone()
                 mask[:, :2*self.veh_dim] = True
                 mask[:, idx] = False
                 mask[:, idx+self.veh_dim] = False                  
-                veh_depot_attn.append(self.cross_attn(veh, nodes, nodes, key_padding_mask=mask)[0][:,idx,:])
-            
-            
-            
-            veh = torch.cat(veh_depot_attn, dim=0).unsqueeze(0) + \
+                veh_depot_attn.append(self.cross_attn(veh, nodes, nodes, key_padding_mask=mask)[0][:,idx,:].unsqueeze(1))
+
+            veh = torch.cat(veh_depot_attn, dim=1) + \
                 veh + self.activation(self.ff(veh))
 
             # veh = self.cross_attn(veh, nodes, nodes, key_padding_mask=node_key_padding_mask)[0] + \
@@ -848,7 +846,7 @@ class GNNAC(Module):
                                                                                    veh_key_padding_mask)
         
         N = nodes.shape[1]
-        M = veh.shape[1]
+        M = [torch.sum(~t).item() for t in veh_key_padding_mask]
 
         # Decode Sequence
         bsz = veh.shape[0]
@@ -877,16 +875,20 @@ class GNNAC(Module):
 
         node_key_padding_mask[:, 0:1] = True
         
-        start_mask = node_key_padding_mask.clone()[:, :M]
-        end_mask = node_key_padding_mask.clone()[:, M:2*M]
-        node_mask = node_key_padding_mask.clone()[:, 2*M:]
-        
-        start_mask[:, :] = True
-        end_mask[:, :] = True
-        end_mask[:, 0:1] = False
+        start_mask = [node_key_padding_mask.clone()[r, :M[r]].unsqueeze(0) for r in range(node_key_padding_mask.shape[0])]
+        end_mask = [node_key_padding_mask.clone()[r, M[r]:2*M[r]].unsqueeze(0) for r in range(node_key_padding_mask.shape[0])]
+        node_mask = [node_key_padding_mask.clone()[r, 2*M[r]:].unsqueeze(0) for r in range(node_key_padding_mask.shape[0])]
 
-        input_mask = torch.cat((start_mask, end_mask, node_mask), dim=1)
-        
+        input_mask = []
+        for s, e, n in zip(start_mask, end_mask, node_mask):
+            e[:, :] = True
+            if ~torch.all(s):
+                e[:, 0:1] = False
+                s[:, :] = True
+            input_mask.append(torch.cat((s, e, n), dim=1))
+
+        input_mask = torch.cat(input_mask, dim=0)
+
         seq_embed, slice_embed = self.sel_enc.reset_buffer(bsz, zero_node, veh[:, 0:1], veh, veh_key_padding_mask)
 
         step = 0
@@ -939,7 +941,7 @@ class GNNAC(Module):
                 cur_chosen_idx = cur_chosen_idx[key_mask]
                 cur_chosen_entry = cur_chosen_entry[key_mask]
                 force_chosen_mask = force_chosen_mask[key_mask]
-
+            
             if actor_grad:
                 chosen_agt, cur_choice, cur_index, cur_entry, cur_prob, cur_dist = self.actor(query, nodes[key_mask], 
                                                                         input_mask[key_mask], 
@@ -971,39 +973,39 @@ class GNNAC(Module):
                         value[key][key_mask, step:step+1] = mod(query, nodes[key_mask], input_mask[key_mask]).squeeze(1)
 
             node_key_padding_mask[choice[:, step].detach().bool()] = True
-            start_mask = node_key_padding_mask.clone()[:, :M]
-            end_mask = node_key_padding_mask.clone()[:, M:2*M]
-            node_mask = node_key_padding_mask.clone()[:, 2*M:]
+            start_mask = [node_key_padding_mask.clone()[r, :M[r]].unsqueeze(0) for r in range(node_key_padding_mask.shape[0])]
+            end_mask = [node_key_padding_mask.clone()[r, M[r]:2*M[r]].unsqueeze(0) for r in range(node_key_padding_mask.shape[0])]
+            node_mask = [node_key_padding_mask.clone()[r, 2*M[r]:].unsqueeze(0) for r in range(node_key_padding_mask.shape[0])]
             start_of_seq = torch.zeros((bsz), dtype=torch.bool, device=info['num_veh'].device)
             for bidx, (gen, idx, ent) in enumerate(zip(seq_enc, index[:, step], entry[:, step])):
                 if key_mask[bidx]:
-                    if idx.item() == veh_idx[bidx].item() + M:
-                        end_of_seq[bidx] = True
-                        end_mask[bidx, :] = True
-                        node_mask[bidx, :] = True
-                    elif end_of_seq[bidx]:
+                    if end_of_seq[bidx]:
                         end_of_seq[bidx] = False
-                        start_mask[bidx, :] = True
-                        end_mask[bidx, :] = True
-                        end_mask[bidx, idx.item()] = False
+                        end_mask[bidx][:, :] = True
+                        end_mask[bidx][:, idx.item()] = False
+                        start_mask[bidx][:, :] = True
                         gen['split'].append([len(gen['tar']), veh_idx[bidx].item()])
                         veh_idx[bidx] = idx.item()
                         start_of_seq[bidx] = True
-                    elif idx.item() >= 2*M:
-                        if torch.all(start_mask[bidx]):
-                            end_mask[bidx, :] = True
-                            if torch.all(node_mask[bidx]):
-                                end_mask[bidx, veh_idx[bidx].item()] = False
-                        else:
-                            start_mask[bidx, :] = True
-                            end_mask[bidx, :] = True
-                            end_mask[bidx, veh_idx[bidx].item()] = False
-                        gen['tar'].append([idx.item() - 2 * M, ent.item()])
+                    elif idx.item() == veh_idx[bidx].item() + M[bidx]:
+                        end_of_seq[bidx] = True
+                        end_mask[bidx][:, :] = True
+                        node_mask[bidx][:, :] = True
+                    elif idx.item() >= 2*M[bidx]:
+                        end_mask[bidx][:, :] = True
+                        end_mask[bidx][:, veh_idx[bidx].item()] = False
+                        start_mask[bidx][:, :] = True                            
+                        gen['tar'].append([idx.item() - 2 * M[bidx], ent.item()])
+
+                    if torch.all(node_key_padding_mask[bidx][:M[bidx]]):
+                        end_mask[bidx][:, :] = True
+                        if torch.all(node_key_padding_mask[bidx][2*M[bidx]:]):
+                            end_mask[bidx][:, veh_idx[bidx].item()] = False
 
                     if torch.all(node_key_padding_mask[bidx]):
                         gen['split'].append([len(gen['tar']), veh_idx[bidx].item()])
 
-            input_mask = torch.cat((start_mask, end_mask, node_mask), dim=1)
+            input_mask = torch.cat([torch.cat((s, e, n), dim=1) for s, e, n in zip(start_mask, end_mask, node_mask)], dim=0)
 
             cur_veh = torch.zeros((bsz, 1, veh.shape[-1]), dtype=veh.dtype, device=veh.device)
             cur_veh[key_mask] = torch.gather(veh[key_mask], index=veh_idx[key_mask].repeat(1, veh.shape[-1]).unsqueeze(1), dim=1)
@@ -1023,11 +1025,7 @@ class GNNAC(Module):
             #             veh_key_padding_mask[mask_idx, count-1]= True
                         
             seq_embed, slice_embed = self.sel_enc(selection, cur_veh, start_of_seq, new_veh, key_mask, veh, veh_key_padding_mask)
-
             step += 1
-
-            if step>=N-2:
-                print(111)
 
         dist = torch.distributions.Categorical(dists[value_mask[:, :-1]])
         if self.single_step:
@@ -1732,7 +1730,7 @@ if __name__=="__main__":
     from torch.nn.utils.rnn import pad_sequence
     from torch_geometric.utils import unbatch, from_networkx
     from torch_geometric.loader import DataLoader
-    from env import multiField
+    from mdvrp.env import multiField
     import numpy as np
     import time
     
@@ -1762,7 +1760,8 @@ if __name__=="__main__":
     #     bsz_data['agents'].append(data['agents'])
     #     bsz_data['targets'].append(data['targets'])
     #     info['num_tgt'] = torch.cat([info['num_tgt'], torch.tensor([data['targets'].shape[0]])])
-        field = multiField([1, 1], width = (600, 600), working_width=24) 
+        field = multiField([1, 1], width = (600, 600), working_width=24,
+                           num_starts=4, num_ends=4) 
         fields.append(field)
 
         pygdata = from_networkx(field.working_graph, 
@@ -1870,10 +1869,12 @@ if __name__=="__main__":
         ]
     ]
 
+    seq_enc, _, _, _, _, _, _  = ac(bsz_data, info, deterministic=True, criticize=False,)
+
     # print(enc)
     # print(ac)
     # global_veh, veh, globel_nodes, nodes, node_key_padding_mask = enc(**bsz_data, veh_key_padding_mask=info['veh_key_padding_mask'])
-    seq_enc, choice, index, entry, prob, dist1, value, value_mask = ac(bsz_data, info, chosen_idx=chosen_idx, chosen_entry=chosen_entry, force_chosen=True)
+    # seq_enc, choice, index, entry, prob, dist1, value, value_mask = ac(bsz_data, info, chosen_idx=chosen_idx, chosen_entry=chosen_entry, force_chosen=True)
     # with torch.no_grad():
     #     seq_enc, choice, index, entry, prob, dist1, value, value_mask = ac(bsz_data, info, actor_grad=False)
     #     tic = time.time()
@@ -1891,7 +1892,6 @@ if __name__=="__main__":
     # loss_c = value['default'].sum()
     # loss_c.backward()
     Ts = list(map(decode, seq_enc))
-    # r = {'s': [], 't': [], 'c': []}
     # r_final = []
     # cost = {}
     # for key, val in value.items():

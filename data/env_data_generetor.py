@@ -1,12 +1,13 @@
-from mdvrp.env import multiField
+from env import multiField
 import torch
 from torch_geometric.utils import unbatch, from_networkx
 import argparse
 import os
-from mdvrp.utils import save_dict, load_dict
+from utils import save_dict, load_dict
 import numpy as np
 import random
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 config = {
     '12': {
@@ -70,64 +71,58 @@ config = {
 }
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--data_num', type=int, default='1')
-    parser.add_argument('--field_num', type=int, default=4)
-    parser.add_argument('--veh_num', type=int, default=4)
-    # parser.add_argument('--field_edge', type=float, default=)
-    parser.add_argument('--task_size', type=str, default='m')
-    parser.add_argument('--save_dir', type=str, default='MAdata')
-    # parser.add_argument('--prefix', type=str, default='0')
-    args = parser.parse_args()
-
-    if not os.path.exists(args.save_dir):
-        os.mkdir(args.save_dir)
+def data_gen(data_num, field_num, veh_num, task_size, save_dir):
+    if not os.path.exists(save_dir):
+        os.mkdir(save_dir)
     
-    args.save_dir = os.path.join(args.save_dir, str(args.field_num) + '_' + str(args.veh_num))
-    if not os.path.exists(args.save_dir):
-        os.mkdir(args.save_dir)
+    save_dir = os.path.join(save_dir, str(field_num) + '_' + str(veh_num))
+    if not os.path.exists(save_dir):
+        os.mkdir(save_dir)
 
-    if args.field_num == 1:
+    if field_num == 1:
         splits = [0, 0]
         field_type = '#'
-    elif args.field_num == 2:
+    elif field_num == 2:
         splits = [1, 0]
         field_type = '#'
-    elif args.field_num == 3:
+    elif field_num == 3:
         splits = [0, 0]
         field_type = 'T'
-    elif args.field_num == 4:
+    elif field_num == 4:
         splits = [1, 1]
         field_type = '#'
-    elif args.field_num == 6:
+    elif field_num == 6:
         splits = [2, 1]
         field_type = '#'
-    elif args.field_num == 8:
+    elif field_num == 8:
         splits = [3, 1]
         field_type = '#'
-    elif args.field_num == 10:
+    elif field_num == 10:
         splits = [5, 1]
         field_type = '#'
-    elif args.field_num == 12:
+    elif field_num == 12:
         splits = [3, 2]
         field_type = '#'
 
     total_node = 0
-    for idx in range(args.data_num):
+    for idx in tqdm(range(data_num)):
         working_width = random.sample([12, 24], 1)[0]
-        width_range = config[str(working_width)][args.task_size][str(args.field_num)]
+        width_range = config[str(working_width)][task_size][str(field_num)]
         width = (width_range[1] - width_range[0]) * np.random.random() + width_range[0]
-        node_num = 0
-        while node_num <= 15:
-            field = multiField(splits, type=field_type, width = (width, width), working_width=working_width) 
-            node_num = field.num_nodes
+        while True:
+            field = multiField(splits, type=field_type, width = (width, width), working_width=working_width,
+                               num_starts=veh_num, num_ends=veh_num) 
+            node_nums = [f.working_graph.number_of_nodes() for f in field.fields]
+            if field.num_nodes < 15 or 0 in node_nums:
+                continue
+            else:
+                break
             
         ax = plt.subplot(1, 1, 1)
         field.render(ax, show=False, entry_point=True, boundary=True, line_colors='k')
 
         name = f'{idx}_{field.num_nodes}_{field.working_width}'
-        name = os.path.join(args.save_dir, name)
+        name = os.path.join(save_dir, name)
         if not os.path.exists(name):
             os.mkdir(name)
 
@@ -135,24 +130,18 @@ if __name__ == "__main__":
         plt.savefig(os.path.join(name, 'render.png'))
         ax.clear()
 
+        field_matrices = [field.D_matrix, field.ori, field.des, field.line_length]
+        save_dict(field_matrices, os.path.join(name, 'field_matrices'))
+
         pygdata = from_networkx(field.working_graph, 
                                 group_node_attrs=['embed'],
                                 group_edge_attrs=['edge_embed'])
-        
-        target = torch.zeros((field.num_nodes, field.num_nodes))
-        target[0, 0] = 1.
-        start = 1
-        for f in field.fields:
-            target[start:start + f.num_working_lines, start:start + f.num_working_lines] = torch.ones((f.num_working_lines, f.num_working_lines))
-            start += f.num_working_lines
-        
         save_dict(pygdata, os.path.join(name, 'pygdata'))
-        save_dict(target, os.path.join(name, 'cluster_target'))
 
         car_cfg = []
         car_cfg_v = []
         
-        for idx in range(args.veh_num):
+        for idx in range(veh_num):
             cur_car = {'vw': np.random.uniform(1, 3.3, 1).item(), 
                     'vv': 0, 
                     'cw': 0, 
@@ -172,5 +161,22 @@ if __name__ == "__main__":
 
         total_node += field.num_nodes
     
-    with open(os.path.join(args.save_dir, 'dataset_config.txt'), 'a') as f:
+    with open(os.path.join(save_dir, 'dataset_config.txt'), 'a') as f:
         f.write(f'Total nodes: {total_node}')
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--data_num', type=int, default=10)
+    parser.add_argument('--field_num', nargs='+', type=int, default=[1, 2, 3])
+    parser.add_argument('--veh_num', nargs='+', type=int, default=[1, 2, 3])
+    # parser.add_argument('--field_edge', type=float, default=)
+    parser.add_argument('--task_size', type=str, default='s')
+    parser.add_argument('--save_dir', type=str, default='/home/fanyx/mdvrp/data/Gdataset/Task_small')
+    # parser.add_argument('--prefix', type=str, default='0')
+    args = parser.parse_args()
+
+    for f_num in args.field_num:
+        for v_num in args.veh_num:
+            data_gen(args.data_num, f_num, v_num, args.task_size, args.save_dir)
+
+    

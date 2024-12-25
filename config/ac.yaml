@@ -9,7 +9,7 @@ encoder_cfg:
       edge_dim: 4  
       embedding_layer: 2 
       nhead: 4  
-      layer_num: 4
+      layer_num: 8
       dropout: 0.1
       whole_batch_edge_processing: False  
       edge_norm: True 

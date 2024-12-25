@@ -1,57 +1,15 @@
-python /home/xuht/Intelligent-Agriculture/ia/algo/arrangement/train_test.py \
-        --seed 6870 \
+/home/fanyx/anaconda3/envs/ia/bin/python /home/fanyx/mdvrp/algo/train_test.py \
+        --seed 4279149 \
         --train_data \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Train_small/1_3 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Train_small/1_5 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Train_small/1_7 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Train_small/2_3 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Train_small/2_5 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Train_small/2_7 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Train_small/3_3 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Train_small/3_5 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Train_small/3_7 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Train_small/4_3 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Train_small/4_5 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Train_small/4_7 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Train_small/6_3 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Train_small/6_5 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Train_small/6_7 \
+        /home/fanyx/mdvrp/data/Gdataset/Task_small/Train \
         --valid_data \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Validation/1_3 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Validation/1_5 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Validation/1_7 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Validation/2_3 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Validation/2_5 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Validation/2_7 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Validation/3_3 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Validation/3_5 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Validation/3_7 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Validation/4_3 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Validation/4_5 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Validation/4_7 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Validation/6_3 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Validation/6_5 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Validation/6_7 \
+        /home/fanyx/mdvrp/data/Gdataset/Task_small/Validation \
         --test_data \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Test/1_3 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Test/1_5 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Test/1_7 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Test/2_3 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Test/2_5 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Test/2_7 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Test/3_3 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Test/3_5 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Test/3_7 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Test/4_3 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Test/4_5 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Test/4_7 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Test/6_3 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Test/6_5 \
-        /home/xuht/Intelligent-Agriculture/ia/Dataset/Gdataset/Task_Test/6_7 \
+        /home/fanyx/mdvrp/data/Gdataset/Task_small/Test \
         --log_dir \
-        /home/xuht/Intelligent-Agriculture/ia/algo/arrangement/runs_rl \
+        /home/fanyx/mdvrp/result/training_rl \
         --config \
-        /home/xuht/Intelligent-Agriculture/ia/algo/arrangement/configs/common.yaml \
+        /home/fanyx/mdvrp/config/common.yaml \
         --epochs 25 \
         --device cuda:1 \
         --rl_algo ppo \

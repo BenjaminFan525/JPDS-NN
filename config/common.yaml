@@ -2,11 +2,9 @@ max_grad_norm: 0.5
 batch_size: 32
 actor_lr: 0.0001 
 critic_lr: 0.0001
-ac_config: /home/xuht/Intelligent-Agriculture/ia/algo/arrangement/configs/ac.yaml
+ac_config: /home/fanyx/mdvrp/config/ac.yaml
 gnn_pretrain: True
-# gnn_checkpoint: /home/xuht/Intelligent-Agriculture/ia/algo/arrangement/runs/2024-02-02__00-16_t_5/best_model500.pt
-# gnn_checkpoint: /home/xuht/Intelligent-Agriculture/ia/algo/arrangement/runs/2024-02-03__00-10_layer_2/best_model332.pt
-gnn_checkpoint: /home/xuht/Intelligent-Agriculture/ia/algo/arrangement/runs/2024-02-03__00-13_layer_4/best_model511.pt
+gnn_checkpoint: /home/fanyx/mdvrp/result/GNN_pretrain/2024-12-21__21-56/best_model986.pt
 gnn_freeze_epochs: 2
 anneal: True
 anneal_final: 0.1

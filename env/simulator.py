@@ -276,10 +276,10 @@ class Simulator:
             ori_ax = len(ax.lines)
             if output_figure:
                 figures = []
-        text = ax.text(0.01, 0.99, 'Initializing', 
-                       horizontalalignment='left', 
-                       verticalalignment='top',
-                       transform=ax.transAxes)
+        # text = ax.text(0.01, 0.99, 'Initializing', 
+        #                horizontalalignment='left', 
+        #                verticalalignment='top',
+        #                transform=ax.transAxes)
         
         while not self.step(a):
             if render:
