@@ -17,6 +17,7 @@ result
 *.catkin_tools
 *.vscode
 *.csv
+*.mp4
 
 *runs*
 

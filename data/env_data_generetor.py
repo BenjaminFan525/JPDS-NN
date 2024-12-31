@@ -71,7 +71,7 @@ config = {
 }
 
 
-def data_gen(data_num, field_num, veh_num, task_size, save_dir):
+def data_gen(data_num, field_num, veh_num, task_size, save_dir, single_depot):
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
     
@@ -111,7 +111,7 @@ def data_gen(data_num, field_num, veh_num, task_size, save_dir):
         width = (width_range[1] - width_range[0]) * np.random.random() + width_range[0]
         while True:
             field = multiField(splits, type=field_type, width = (width, width), working_width=working_width,
-                               num_starts=veh_num, num_ends=veh_num) 
+                               num_starts=veh_num, num_ends=veh_num, single_depot=single_depot) 
             node_nums = [f.working_graph.number_of_nodes() for f in field.fields]
             if field.num_nodes < 15 or 0 in node_nums:
                 continue
@@ -168,7 +168,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_num', type=int, default=10)
     parser.add_argument('--field_num', nargs='+', type=int, default=[1, 2, 3])
-    parser.add_argument('--veh_num', nargs='+', type=int, default=[1, 2, 3])
+    parser.add_argument('--veh_num', nargs='+', type=int, default=[3])
+    parser.add_argument('--single_depot', action='store_true', default=True)
     # parser.add_argument('--field_edge', type=float, default=)
     parser.add_argument('--task_size', type=str, default='s')
     parser.add_argument('--save_dir', type=str, default='/home/fanyx/mdvrp/data/Gdataset/Task_small')
@@ -177,6 +178,6 @@ if __name__ == "__main__":
 
     for f_num in args.field_num:
         for v_num in args.veh_num:
-            data_gen(args.data_num, f_num, v_num, args.task_size, args.save_dir)
+            data_gen(args.data_num, f_num, v_num, args.task_size, args.save_dir, args.single_depot)
 
     

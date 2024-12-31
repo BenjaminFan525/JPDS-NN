@@ -22,7 +22,7 @@ class multiField():
 
     def __init__(self, num_splits, type = '#', width: Tuple = (200, 300), center_lat_lon = (40, 116), working_width = None, 
                  boundary_coords: Optional[np.ndarray] = None, starts: Optional[str] = None, ends: Optional[str] = None, 
-                 num_starts=None, num_ends=None, num_veh=None):
+                 num_starts=None, num_ends=None, single_depot=False):
         for key, val in self.defauts.items():
             setattr(self, key, val)
         
@@ -126,8 +126,8 @@ class multiField():
             ])
 
         # sample starts and ends
-        self.starts = self.sample_nodes(num_starts) if starts is None else starts
-        self.ends = self.sample_nodes(num_ends) if ends is None else ends
+        self.starts = self.sample_nodes(num_starts, single_depot) if starts is None else starts
+        self.ends = self.sample_nodes(num_ends, single_depot) if ends is None else ends
         # TODO: change here
         self.num_veh = len(self.starts)
         self.num_endpoints = self.num_veh if self.ends is None else 2*self.num_veh
@@ -334,9 +334,12 @@ class multiField():
 
         return path
 
-    def sample_nodes(self, num):
+    def sample_nodes(self, num, single_depot):
         if num == 'all':
             return list(self.Graph.nodes)
+        elif single_depot:
+            sample = random.sample(list(self.Graph.nodes), 1)[0]
+            return [sample for _ in range(num)]
         else:
             assert isinstance(num, int), f"input must be integer, got {num}"
             return [random.sample(list(self.Graph.nodes), 1)[0] for _ in range(num)]

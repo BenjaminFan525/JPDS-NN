@@ -10,14 +10,15 @@
         /home/fanyx/mdvrp/result/training_rl \
         --config \
         /home/fanyx/mdvrp/config/common.yaml \
-        --epochs 25 \
-        --device cuda:1 \
+        --epochs 40 \
+        --device cuda:0 \
         --rl_algo ppo \
         --obj t \
+        --checkpoint /home/fanyx/mdvrp/result/training_rl/ppo/2024-12-25__22-46/best_model10.pt \
         --fusing_s \
-        --fusing_epoch 4 \
+        --fusing_epoch 7 \
         # --total_time \
         # --total_time_epoch 6
         # --veh_reciprocal
         
-        # --checkpoint /home/xuht/Intelligent-Agriculture/ia/algo/arrangement/runs_rl/ppo/2024-02-15__23-48_base/best_model18.pt
+        

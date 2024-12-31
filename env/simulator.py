@@ -18,6 +18,9 @@ COLORS = (
         'yellow',
         'black',
         'green',
+        'purple',
+        'orange',
+        'blue',
         # '#0072B2',
         '#009E73',
         '#D55E00',
@@ -486,7 +489,7 @@ class arrangeSimulator():
         else:
             self.field.render(ax, working_lines=False, show=False)
         for idx, path in enumerate(self.paths):
-            ax.plot(path[:, 0], path[:, 1], '--', color = COLORS[idx % len(COLORS)], label=f'农机{idx+1}')
+            ax.plot(path[:, 0], path[:, 1], '--', color = COLORS[idx % len(COLORS)], label=f'Veh{idx+1}')
         ax.legend(fontsize=16, loc='lower left')
         return ax
     
@@ -533,6 +536,7 @@ if __name__ == "__main__":
     import torch
     from torch_geometric.utils import unbatch, from_networkx
     from datetime import datetime
+    from mdvrp.utils import save_dict
 
     # dir = input("输入作业地块: ")
     # if dir.split('.')[-1] == 'geojson':
@@ -623,6 +627,7 @@ if __name__ == "__main__":
     field.from_ia(field_ia)
     field_list = [0, 3]
     field.make_working_graph(field_list)
+    save_dict(field, '/data/fanyx_files/Intelligent-Agriculture/MAdata/4_4/0_39_24/field')
     
     ac = load_model(checkpoint)
     ac.num_veh = field.num_veh
