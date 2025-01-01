@@ -1,1 +1,1 @@
-/home/fanyx/anaconda3/envs/ia/bin/python /home/fanyx/mdvrp/data/env_data_generetor.py --data_num 10 --field_num 1 2 3 4 6 --veh_num 1 2 3 4 5 6 --save_dir /home/fanyx/mdvrp/data/Gdataset/Task_validation_xx
+/home/fanyx/anaconda3/envs/ia/bin/python /home/fanyx/mdvrp/data/env_data_generetor.py --data_num 300 --field_num 1 2 3 4 6 --veh_num 1 2 3 4 5 6  --save_ia --save_dir /home/fanyx/mdvrp/data/Gdataset/Task_test

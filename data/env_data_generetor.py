@@ -8,6 +8,7 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from ia.env.multi_field import multiField as multiField_ia
 
 config = {
     '12': {
@@ -71,7 +72,7 @@ config = {
 }
 
 
-def data_gen(data_num, field_num, veh_num, task_size, save_dir, single_depot):
+def data_gen(data_num, field_num, veh_num, task_size, save_dir, save_ia):
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
     
@@ -110,10 +111,18 @@ def data_gen(data_num, field_num, veh_num, task_size, save_dir, single_depot):
         width_range = config[str(working_width)][task_size][str(field_num)]
         width = (width_range[1] - width_range[0]) * np.random.random() + width_range[0]
         while True:
-            field = multiField(splits, type=field_type, width = (width, width), working_width=working_width,
-                               num_starts=veh_num, num_ends=veh_num, single_depot=single_depot) 
+            if save_ia:
+                field_ia = multiField_ia(splits, type=field_type, width = (width, width), working_width=working_width) 
+                field = multiField(splits, type=field_type, width = (width, width), working_width=working_width,
+                                starts=[field_ia.home for _ in range(veh_num)],
+                                ends=[field_ia.home for _ in range(veh_num)]) 
+                field.from_ia(field_ia)
+            else:
+                field = multiField(splits, type=field_type, width = (width, width), working_width=working_width,
+                                num_starts=veh_num, num_ends=veh_num) 
+            
             node_nums = [f.working_graph.number_of_nodes() for f in field.fields]
-            if field.num_nodes < 15 or 0 in node_nums:
+            if field.num_nodes < 20 or 0 in node_nums:
                 continue
             else:
                 break
@@ -127,16 +136,26 @@ def data_gen(data_num, field_num, veh_num, task_size, save_dir, single_depot):
             os.mkdir(name)
 
         save_dict(field, os.path.join(name, 'field'))
+        if save_ia:
+            save_dict(field_ia, os.path.join(name, 'field_ia'))
         plt.savefig(os.path.join(name, 'render.png'))
         ax.clear()
 
         field_matrices = [field.D_matrix, field.ori, field.des, field.line_length]
         save_dict(field_matrices, os.path.join(name, 'field_matrices'))
+        if save_ia:
+            field_matrices_ia = [field_ia.D_matrix, field_ia.ori, field_ia.ori, field_ia.line_length]
+            save_dict(field_matrices_ia, os.path.join(name, 'field_matrices_ia'))
 
         pygdata = from_networkx(field.working_graph, 
                                 group_node_attrs=['embed'],
                                 group_edge_attrs=['edge_embed'])
         save_dict(pygdata, os.path.join(name, 'pygdata'))
+        if save_ia:
+            pygdata_ia = from_networkx(field_ia.working_graph, 
+                                    group_node_attrs=['embed'],
+                                    group_edge_attrs=['edge_embed'])
+            save_dict(pygdata_ia, os.path.join(name, 'pygdata_ia'))            
 
         car_cfg = []
         car_cfg_v = []
@@ -168,8 +187,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_num', type=int, default=10)
     parser.add_argument('--field_num', nargs='+', type=int, default=[1, 2, 3])
-    parser.add_argument('--veh_num', nargs='+', type=int, default=[3])
-    parser.add_argument('--single_depot', action='store_true', default=True)
+    parser.add_argument('--veh_num', nargs='+', type=int, default=[1, 2, 3])
+    parser.add_argument('--save_ia', action='store_true', default=False)
     # parser.add_argument('--field_edge', type=float, default=)
     parser.add_argument('--task_size', type=str, default='s')
     parser.add_argument('--save_dir', type=str, default='/home/fanyx/mdvrp/data/Gdataset/Task_small')
@@ -178,6 +197,6 @@ if __name__ == "__main__":
 
     for f_num in args.field_num:
         for v_num in args.veh_num:
-            data_gen(args.data_num, f_num, v_num, args.task_size, args.save_dir, args.single_depot)
+            data_gen(args.data_num, f_num, v_num, args.task_size, args.save_dir, args.save_ia)
 
     

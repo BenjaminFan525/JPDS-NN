@@ -1,2 +1,2 @@
-from data.dataloader import ClusterGNNDataLoader, RLDataLoader
-from data.dataset import ClusterGNNDataset, MaDataset, RLDataset
+from data.dataloader import ClusterGNNDataLoader, RLDataLoader, RLTestDataLoader
+from data.dataset import ClusterGNNDataset, MaDataset, RLDataset, RLTestDataset

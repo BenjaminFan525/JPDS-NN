@@ -19,8 +19,8 @@ COLORS = (
         'black',
         'green',
         'purple',
-        'orange',
         'blue',
+        'orange',
         # '#0072B2',
         '#009E73',
         '#D55E00',
@@ -536,7 +536,7 @@ if __name__ == "__main__":
     import torch
     from torch_geometric.utils import unbatch, from_networkx
     from datetime import datetime
-    from mdvrp.utils import save_dict
+    from utils import save_dict
 
     # dir = input("输入作业地块: ")
     # if dir.split('.')[-1] == 'geojson':

@@ -23,8 +23,9 @@ from env import arrangeSimulator, simulator
 import cv2
 
 
-data = "/data/fanyx_files/mdvrp/experiment/case_study/4_4/8_52_12"
-field = load_dict(os.path.join(data, 'field.pkl'))
+data = "/home/fanyx/mdvrp/experiment/case_study/4_4/0_39_24"
+field_ia = load_dict(os.path.join(data, 'field.pkl'))
+
 
 car_cfg = [{'vw': 2.5, 'vv': 4.5, 'cw': 0.008, 'cv': 0.006, 'tt': 0, 'min_R': 6},
             {'vw': 3, 'vv': 5, 'cw': 0.007, 'cv': 0.005, 'tt': 0, 'min_R': 6},
@@ -39,6 +40,7 @@ car_cfg_0 = [{'vw': 2.5, 'vv': 4.5, 'cw': 0.008, 'cv': 0.006, 'tt': 0, 'min_R': 
 algo = 'PPO-t'
 f = 't'
 
+# checkpoint = "/data/fanyx_files/Intelligent-Agriculture/ia/algo/arrangement/runs_rl/ppo/2024-03-04__12-53_t/best_model39.pt"
 checkpoint = "/home/fanyx/mdvrp/result/training_rl/ppo/2024-12-27__12-11/best_model31.pt"
 
 car_cfg_v = [[cur_car['vw'], cur_car['vv'],
@@ -46,27 +48,20 @@ car_cfg_v = [[cur_car['vw'], cur_car['vv'],
                 cur_car['tt']] for cur_car in car_cfg]
 car_tensor = torch.tensor(np.array(car_cfg_v)).float()
 
-field.starts=['bound-2-1', 
-              'bound-2-1', 
-              'bound-2-1', 
-              'bound-2-1', 
-              'bound-2-1']
+field = multiField(num_splits=[1, 1], 
+                       starts=['bound-2-1', 
+                               'bound-2-1', 
+                               'bound-2-1', 
+                               'bound-2-1', 
+                               'bound-2-1'],
+                       ends=['bound-2-1',
+                             'bound-2-1',
+                             'bound-2-1',
+                             'bound-2-1',
+                             'bound-2-1']
+                       )
 
-field.ends=['bound-2-1',
-            'bound-2-1',
-            'bound-2-1',
-            'bound-2-1',
-            'bound-2-1']
-
-# field = multiField(num_splits=[1, 1], 
-#                    starts=['bound-2-1', 
-#                           'bound-1-3', 
-#                           'bound-3-2', 
-#                           'bound-0-0', 
-#                           'bound-0-0'])
-# field = multiField([1, 1], homes=['bound-2-1'])
-
-# field.from_ia(field_ia)
+field.from_ia(field_ia)
 # field_list = [0, 3]
 # field.make_working_graph(field_list)
 field.make_working_graph()
@@ -129,3 +124,14 @@ else:
     print('error')
     
 print(os.path.join(data, algo + ".mp4"))
+
+s, t, c = fit(field.D_matrix, 
+                    field.ori, 
+                    field.des,
+                    car_cfg, 
+                    field.line_length,
+                    T, 
+                    tS_t=False,
+                    type='all')
+
+print(f'Distance:{s} Time:{t} Fuel:{c}')
