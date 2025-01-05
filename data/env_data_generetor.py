@@ -8,7 +8,7 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from ia.env.multi_field import multiField as multiField_ia
+import ia.env.multi_field
 
 config = {
     '12': {
@@ -20,11 +20,12 @@ config = {
             '6': (320, 320),
         },
         's': { # everage 30
-            '1': (500, 650),
-            '2': (450, 600),
-            '3': (400, 500),
-            '4': (400, 500),
-            '6': (400, 500),
+            '1': (700, 800),
+            '2': (600, 700),
+            '3': (500, 700),
+            '4': (700, 700),
+            '5': (700, 800),
+            '6': (800, 900),
         },
         'm': { # everage 40
             '1': (700, 800),
@@ -49,11 +50,12 @@ config = {
             '6': (600, 600),
         },
         's': {  # everage 30
-            '1': (900, 1200),
-            '2': (900, 1100),
-            '3': (800, 1000),
-            '4': (700, 900),
-            '6': (700, 800),
+            '1': (1300, 1500),
+            '2': (1100, 1400),
+            '3': (1000, 1300),
+            '4': (1300, 1300),
+            '5': (1300, 1500),
+            '6': (1400, 1600),
         },
         'm': { # everage 40
             '1': (1300, 1500),
@@ -87,10 +89,13 @@ def data_gen(data_num, field_num, veh_num, task_size, save_dir, save_ia):
         splits = [1, 0]
         field_type = '#'
     elif field_num == 3:
-        splits = [0, 0]
-        field_type = 'T'
+        splits = [1, 1]
+        field_type = '#'
     elif field_num == 4:
         splits = [1, 1]
+        field_type = '#'
+    elif field_num == 5:
+        splits = [2, 1]
         field_type = '#'
     elif field_num == 6:
         splits = [2, 1]
@@ -112,17 +117,24 @@ def data_gen(data_num, field_num, veh_num, task_size, save_dir, save_ia):
         width = (width_range[1] - width_range[0]) * np.random.random() + width_range[0]
         while True:
             if save_ia:
-                field_ia = multiField_ia(splits, type=field_type, width = (width, width), working_width=working_width) 
+                field_ia = ia.env.multi_field.multiField(splits, type=field_type, width = (width, width), working_width=working_width) 
                 field = multiField(splits, type=field_type, width = (width, width), working_width=working_width,
                                 starts=[field_ia.home for _ in range(veh_num)],
                                 ends=[field_ia.home for _ in range(veh_num)]) 
                 field.from_ia(field_ia)
+                if field_num == 3 or field_num == 5:
+                    field_ia.merge_field([0, 1])
+                    field.starts=[field_ia.home for _ in range(veh_num)]
+                    field.ends=[field_ia.home for _ in range(veh_num)]
+                    field.merge_field([0, 1])
             else:
                 field = multiField(splits, type=field_type, width = (width, width), working_width=working_width,
                                 num_starts=veh_num, num_ends=veh_num) 
+                if field_num == 3 or field_num == 5:
+                    field.merge_field([0, 1])
             
-            node_nums = [f.working_graph.number_of_nodes() for f in field.fields]
-            if field.num_nodes < 20 or 0 in node_nums:
+            line_nums = [f.num_working_lines for f in field.fields]
+            if np.all(np.array(line_nums) > 1) == False:
                 continue
             else:
                 break
@@ -186,12 +198,12 @@ def data_gen(data_num, field_num, veh_num, task_size, save_dir, save_ia):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_num', type=int, default=10)
-    parser.add_argument('--field_num', nargs='+', type=int, default=[1, 2, 3])
+    parser.add_argument('--field_num', nargs='+', type=int, default=[5, 2, 3])
     parser.add_argument('--veh_num', nargs='+', type=int, default=[1, 2, 3])
-    parser.add_argument('--save_ia', action='store_true', default=False)
+    parser.add_argument('--save_ia', action='store_true', default=True)
     # parser.add_argument('--field_edge', type=float, default=)
     parser.add_argument('--task_size', type=str, default='s')
-    parser.add_argument('--save_dir', type=str, default='/home/fanyx/mdvrp/data/Gdataset/Task_small')
+    parser.add_argument('--save_dir', type=str, default='/home/fanyx/mdvrp/data/Gdataset/Task_test_xxx')
     # parser.add_argument('--prefix', type=str, default='0')
     args = parser.parse_args()
 

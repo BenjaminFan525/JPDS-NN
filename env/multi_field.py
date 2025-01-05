@@ -348,7 +348,6 @@ class multiField():
     def merge_field(self, merge_ids : list):
         assert len(merge_ids) > 1, f"input must be looger than 2, got {len(merge_ids)}"
         row, col = self.num_splits[0] + 1, self.num_splits[1] + 1
-        print(f'row:{row}, col:{col}')
         
         self.Graph = nx.Graph()
         # check if merge area is a connected component
@@ -391,6 +390,8 @@ class multiField():
                        for idx, data in enumerate(self.fields)]
         
         self.Graph: nx.Graph = nx.compose_all([self.Graph] + [field.Graph for field in self.fields])
+
+        self.make_working_graph()
         
     def merge_row(self, merge_ids : list):
         row, col = self.num_splits[0] + 1, self.num_splits[1] + 1

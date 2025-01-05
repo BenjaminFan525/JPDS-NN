@@ -113,17 +113,19 @@ print(path)
 chosen_idx = [[line[0] for line in simulator.simulator.traveled_line[idx]] for idx in range(len(car_cfg))]
 chosen_entry = [[line[1] for line in simulator.simulator.traveled_line[idx]] for idx in range(len(car_cfg))]
 
-if figs is not None:
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    videoWriter = cv2.VideoWriter(os.path.join(data, algo + ".mp4"), fourcc, 12, (figs[0].shape[1], figs[0].shape[0]), True)
-    # map(videoWriter.write, figs)
-    for fig in figs:
-        videoWriter.write(fig)
-    videoWriter.release() 
-else:
-    print('error')
+# if figs is not None:
+#     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+#     videoWriter = cv2.VideoWriter(os.path.join(data, algo + ".mp4"), fourcc, 12, (figs[0].shape[1], figs[0].shape[0]), True)
+#     # map(videoWriter.write, figs)
+#     for fig in figs:
+#         videoWriter.write(fig)
+#     videoWriter.release() 
+# else:
+#     print('error')
     
-print(os.path.join(data, algo + ".mp4"))
+# print(os.path.join(data, algo + ".mp4"))
+
+print(f'Distance:{s} Time:{t} Fuel:{c}')
 
 s, t, c = fit(field.D_matrix, 
                     field.ori, 
