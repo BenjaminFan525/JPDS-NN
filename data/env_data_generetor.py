@@ -74,7 +74,7 @@ config = {
 }
 
 
-def data_gen(data_num, field_num, veh_num, task_size, save_dir, save_ia):
+def data_gen(data_num, field_num, veh_num, task_size, save_dir, save_ia, single_end):
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
     
@@ -129,12 +129,12 @@ def data_gen(data_num, field_num, veh_num, task_size, save_dir, save_ia):
                     field.merge_field([0, 1])
             else:
                 field = multiField(splits, type=field_type, width = (width, width), working_width=working_width,
-                                num_starts=veh_num, num_ends=veh_num) 
+                                num_starts=veh_num, num_ends=veh_num, single_end=single_end) 
                 if field_num == 3 or field_num == 5:
-                    field.merge_field([0, 1])
+                    field.merge_field([0, 1], num_starts=veh_num, num_ends=veh_num)
             
             line_nums = [f.num_working_lines for f in field.fields]
-            if np.all(np.array(line_nums) > 1) == False:
+            if np.all(np.array(line_nums) > 3) == False or np.sum(line_nums) < 20:
                 continue
             else:
                 break
@@ -200,7 +200,8 @@ if __name__ == "__main__":
     parser.add_argument('--data_num', type=int, default=10)
     parser.add_argument('--field_num', nargs='+', type=int, default=[5, 2, 3])
     parser.add_argument('--veh_num', nargs='+', type=int, default=[1, 2, 3])
-    parser.add_argument('--save_ia', action='store_true', default=True)
+    parser.add_argument('--save_ia', action='store_true', default=False)
+    parser.add_argument('--single_end', action='store_true', default=False)
     # parser.add_argument('--field_edge', type=float, default=)
     parser.add_argument('--task_size', type=str, default='s')
     parser.add_argument('--save_dir', type=str, default='/home/fanyx/mdvrp/data/Gdataset/Task_test_xxx')
@@ -209,6 +210,6 @@ if __name__ == "__main__":
 
     for f_num in args.field_num:
         for v_num in args.veh_num:
-            data_gen(args.data_num, f_num, v_num, args.task_size, args.save_dir, args.save_ia)
+            data_gen(args.data_num, f_num, v_num, args.task_size, args.save_dir, args.save_ia, args.single_end)
 
     

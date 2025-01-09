@@ -170,7 +170,7 @@ class Simulator:
         self.lines_id = lines_id
         self.field = field
         # self.car_status = ['home', [0, 0]]*len(car_list)
-        self.car_status = [{'line': self.field.nodes_list[0], 'pos': path[0][0], 'inline': False} for _ in range(len(car_list))]
+        self.car_status = [{'line': self.field.nodes_list[0+idx], 'pos': path[0][0], 'inline': False} for idx, _ in enumerate(range(len(car_list)))]
         self.traveled_line = [[] for _ in range(len(car_list))]
         if car_tracking:
             self.car_tracking = car_tracking # 车辆是否跟踪路径
@@ -223,12 +223,12 @@ class Simulator:
                     car.stop()
                 # 经过了终点，换下一个路径
                 elif (car.position() - self.path_list[idx][1]) @ self.tracking_vector_list[idx] >= 0:
-                    if len(self.line_nodes[idx]) and np.array_equal(self.path_list[idx][0], self.line_nodes[idx][0]):
+                    if len(self.line_nodes[idx]) and np.allclose(self.path_list[idx][0], self.line_nodes[idx][0]):
                         self.line_nodes[idx] = np.delete(self.line_nodes[idx], 0, axis=0)
                         if len(self.line_nodes[idx]) % 2 == 0:
                             self.traveled_line[idx].append(self.field.working_line_list[self.lines_id[idx].pop(0)[0]])
                     
-                    self.car_status[idx]['line'] = self.field.working_line_list[self.lines_id[idx][0][0]] if len(self.lines_id[idx]) else self.field.nodes_list[0]
+                    self.car_status[idx]['line'] = self.field.working_line_list[self.lines_id[idx][0][0]] if len(self.lines_id[idx]) else self.field.nodes_list[idx+len(self.car_list)]
                     self.car_status[idx]['pos'] = self.path_list[idx][0]
                     self.car_status[idx]['inline'] = len(self.line_nodes[idx]) % 2 != 0
                     
@@ -279,10 +279,10 @@ class Simulator:
             ori_ax = len(ax.lines)
             if output_figure:
                 figures = []
-        # text = ax.text(0.01, 0.99, 'Initializing', 
-        #                horizontalalignment='left', 
-        #                verticalalignment='top',
-        #                transform=ax.transAxes)
+        text = ax.text(0.01, 0.99, 'Initializing', 
+                       horizontalalignment='left', 
+                       verticalalignment='top',
+                       transform=ax.transAxes)
         
         while not self.step(a):
             if render:
@@ -291,8 +291,8 @@ class Simulator:
                         while len(ax.lines) > ori_ax:
                             ax.lines.pop()
                     self.render(ax, show = False)
-                    # disp_str = ''.join([f"Car_{idx+1}:\t line: {status['line']}\t pos: {status['pos']}\t inline: {status['inline']}\n" for idx, status in enumerate(self.car_status)])
-                    # text.set_text(disp_str)
+                    disp_str = ''.join([f"Car {idx+1} | line {status['line']} | pos {status['pos']} | inline {status['inline']}\n" for idx, status in enumerate(self.car_status)])
+                    text.set_text(disp_str)
                     if output_figure:
                         canvas = FigureCanvasAgg(plt.gcf())
                         w, h = canvas.get_width_height()
@@ -305,7 +305,7 @@ class Simulator:
                         figures.append(np.asarray(image)[:, :, :3])
                     if show:
                         plt.pause(0.01)
-        
+
         return figures if render and output_figure else None
             
     def pause(self):

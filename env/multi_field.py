@@ -22,7 +22,7 @@ class multiField():
 
     def __init__(self, num_splits, type = '#', width: Tuple = (200, 300), center_lat_lon = (40, 116), working_width = None, 
                  boundary_coords: Optional[np.ndarray] = None, starts: Optional[str] = None, ends: Optional[str] = None, 
-                 num_starts=None, num_ends=None, num_veh=None):
+                 num_starts=None, num_ends=None, single_end=False):
         for key, val in self.defauts.items():
             setattr(self, key, val)
         
@@ -128,6 +128,11 @@ class multiField():
         # sample starts and ends
         self.starts = self.sample_nodes(num_starts) if starts is None else starts
         self.ends = self.sample_nodes(num_ends) if ends is None else ends
+        if single_end:
+            end = self.sample_nodes(1)[0]
+            self.ends = [end for _ in range(num_ends)]
+        self.single_end = single_end
+        
         # TODO: change here
         self.num_veh = len(self.starts)
         self.num_endpoints = self.num_veh if self.ends is None else 2*self.num_veh
@@ -345,7 +350,7 @@ class multiField():
         return 0
         
     
-    def merge_field(self, merge_ids : list):
+    def merge_field(self, merge_ids : list, num_starts=None, num_ends=None):
         assert len(merge_ids) > 1, f"input must be looger than 2, got {len(merge_ids)}"
         row, col = self.num_splits[0] + 1, self.num_splits[1] + 1
         
@@ -388,6 +393,12 @@ class multiField():
                              dis_matrix=False, 
                              utm_base=self.utm_base)
                        for idx, data in enumerate(self.fields)]
+        
+        self.starts = self.sample_nodes(num_starts) if num_starts is not None else self.starts
+        self.ends = self.sample_nodes(num_ends) if num_ends is not None else self.ends
+        if self.single_end:
+            end = self.sample_nodes(1)[0]
+            self.ends = [end for _ in range(num_ends)]
         
         self.Graph: nx.Graph = nx.compose_all([self.Graph] + [field.Graph for field in self.fields])
 
