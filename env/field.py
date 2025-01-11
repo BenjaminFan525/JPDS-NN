@@ -252,8 +252,10 @@ class Field():
         if self.working_field is None:
             return 
         
-        for idx, line in enumerate(self.working_lines):
-            assert idx == line[0]
+        for idx, l in enumerate(self.working_lines):
+            line = l.copy()
+            if idx != line[0]:
+                line[0] = idx
             self.Graph.add_nodes_from([
                 (ucommon.gen_node('line_0', self.field_num, idx), {'coord': line[2:4]}),
                 (ucommon.gen_node('line_1', self.field_num, idx), {'coord': line[4:6]}),

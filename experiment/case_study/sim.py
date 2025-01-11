@@ -13,6 +13,7 @@ import ia.algo.arrangement.models.ac as ia_model
 import ia.utils as ia_util
 import ia.env.simulator as ia_env
 from matplotlib.animation import FuncAnimation
+import cv2
 
 def load_model(checkpoint, model_type='mdvrp'):
     cfg = os.path.join('/'.join(checkpoint.split('/')[:-1]), 'config.json')
@@ -75,52 +76,92 @@ field.from_ia(field_ia)
 ac = load_model(checkpoint)
 ac.sequential_sel = True
 
-pygdata = from_networkx(field.working_graph, group_node_attrs=['embed'], group_edge_attrs=['edge_embed'])
-data_t = {'graph': Batch.from_data_list([pygdata]), 'vehicles': car_tensor.unsqueeze(0)}
-info = {'veh_key_padding_mask': torch.zeros((1, len(car_tensor))).bool(), 'num_veh': torch.tensor([[car_tensor.shape[0]]])}
+# pygdata = from_networkx(field.working_graph, group_node_attrs=['embed'], group_edge_attrs=['edge_embed'])
+# data_t = {'graph': Batch.from_data_list([pygdata]), 'vehicles': car_tensor.unsqueeze(0)}
+# info = {'veh_key_padding_mask': torch.zeros((1, len(car_tensor))).bool(), 'num_veh': torch.tensor([[car_tensor.shape[0]]])}
 
-with torch.no_grad():
-    seq_enc, _, _, _, _, _, _ = ac(data_t, info, deterministic=True, criticize=False, )
-T = decode(seq_enc[0])
+# with torch.no_grad():
+#     seq_enc, _, _, _, _, _, _ = ac(data_t, info, deterministic=True, criticize=False, )
+# T = decode(seq_enc[0])
 
-field_ia = load_dict(os.path.join(data, 'field.pkl'))
-ac_ia = load_model(checkpoint_ia, model_type='ia')
-pygdata = from_networkx(field_ia.working_graph, group_node_attrs=['embed'], group_edge_attrs=['edge_embed'])
-data_t = {'graph': Batch.from_data_list([pygdata]), 'vehicles': car_tensor.unsqueeze(0)}
-info = {'veh_key_padding_mask': torch.zeros((1, len(car_tensor))).bool(), 'num_veh': torch.tensor([[car_tensor.shape[0]]])}
-with torch.no_grad():
-    seq_enc, _, _, _, _, _, _ = ac_ia(data_t, info, deterministic=True, criticize=False, )
+# print(f"Simulator initializng...")
+# simulator = arrangeSimulator(field, car_cfg)
+# simulator.init_simulation(T, debug=True)
+# # simulator.render_arrange()
+# # s, t, c = fit(field.D_matrix, 
+# #                 field.ori, 
+# #                 field.des,
+# #                 car_cfg, 
+# #                 field.line_length,
+# #                 T, 
+# #                 tS_t=False,
+# #                 type='all')
+# # plt.title(f'$s_P$={np.round(s, 2)}m, $t_P$={np.round(t, 2)}s, $c_P$={np.round(c, 2)}L', fontsize=20)
 
-T_ia = ia_util.decode(seq_enc[0])
+# ax = simulator.field.render(working_lines=False, show=False, start=False)
+# t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, True, False, False, True)
+# print(f"Simulation result: s={np.round(s1, 2)}m, t={np.round(t1, 2)}s, c={np.round(c1, 2)}L")
 
-for idx, T in enumerate([T, T_ia]):
-    print(f"Simulator is initialing...")
-    simulator = arrangeSimulator(field, car_cfg)
-    simulator.init_simulation(T, debug=True)
-    simulator.render_arrange()
+# print(f"Simulator initializng...")
+# simulator = arrangeSimulator(field, car_cfg)
+# simulator.init_simulation(T, debug=True)
+# # simulator.render_arrange()
+# s, t, c = fit(field.D_matrix, 
+#                 field.ori, 
+#                 field.des,
+#                 car_cfg, 
+#                 field.line_length,
+#                 T, 
+#                 tS_t=False,
+#                 type='all')
+# # plt.title(f'$s_P$={np.round(s, 2)}m, $t_P$={np.round(t, 2)}s, $c_P$={np.round(c, 2)}L', fontsize=20)
 
-    a = np.array([[cfg['vw'], cfg['vv']] for cfg in simulator.car_cfg])
+# simulator.simulator.time_teriminate = t*0.5
+# ax = simulator.field.render(working_lines=False, show=False, start=False)
+# t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, True, False, False, True)
+# print(f"Simulator paused")
+# for idx, status in enumerate(simulator.simulator.car_status):
+#     print(f"Car {idx+1} | line {status['line']} | entry {status['entry']} | pos ({status['pos'][0]:3.2f}, {status['pos'][1]:3.2f}) | inline {status['inline']}")
 
-    t, c, s, car_time, car_dis, figs = simulator.simulate(True, True, False)
+# chosen_idx, chosen_entry = field.edit_fields(simulator.simulator.car_status)
+# # field.render(working_lines=True, show=False)
 
-    s, t, c = fit(field.D_matrix, 
-                    field.ori, 
-                    field.des,
-                    car_cfg, 
-                    field.line_length,
-                    T, 
-                    tS_t=False,
-                    type='all')
-    plt.title(f'$s_P$={np.round(s, 2)}m, $t_P$={np.round(t, 2)}s, $c_P$={np.round(c, 2)}L', fontsize=20)
-    print(f"Simulation result: s={np.round(s, 2)}m, t={np.round(t, 2)}s, c={np.round(c, 2)}L")
-    
+# pygdata = from_networkx(field.working_graph, group_node_attrs=['embed'], group_edge_attrs=['edge_embed'])
+# data_t = {'graph': Batch.from_data_list([pygdata]), 'vehicles': car_tensor.unsqueeze(0)}
+# info = {'veh_key_padding_mask': torch.zeros((1, len(car_tensor))).bool(), 'num_veh': torch.tensor([[car_tensor.shape[0]]])}
 
-plt.show()
+# with torch.no_grad():
+#     seq_enc, _, _, _, _, _, _ = ac(data_t, info, deterministic=True, criticize=False, 
+#                                    force_chosen=True, 
+#                                    chosen_idx=chosen_idx, chosen_entry=chosen_entry)
+# T = decode(seq_enc[0])
+
+# print(f"Simulator restarting...")
+# simulator = arrangeSimulator(field, car_cfg)
+# simulator.init_simulation(T, debug=True)
+# s, t, c = fit(field.D_matrix, 
+#                 field.ori, 
+#                 field.des,
+#                 car_cfg, 
+#                 field.line_length,
+#                 T, 
+#                 tS_t=False,
+#                 type='all')
+# # plt.title(f'$s_P$={np.round(s, 2)}m, $t_P$={np.round(t, 2)}s, $c_P$={np.round(c, 2)}L', fontsize=20)
+# [ax.plot(field.Graph.nodes[start]['coord'][0], 
+#                     field.Graph.nodes[start]['coord'][1], 
+#                     '*y', 
+#                     markersize=20) for start in field.starts]
+# t2, c2, s2, car_time, car_dis, ax, figs2 = simulator.simulate(ax, True, False, False, False)
+
+# print(f"Simulation result: s={np.round(s1+s2, 2)}m, t={np.round(t1+t2, 2)}s, c={np.round(c1+c2, 2)}L")
+# plt.show()
+
 
 
 # chosen_idx = [[line[0] for line in simulator.simulator.traveled_line[idx]] for idx in range(len(car_cfg))]
 # chosen_entry = [[line[1] for line in simulator.simulator.traveled_line[idx]] for idx in range(len(car_cfg))]
-
+# figs = figs1 + figs2
 # if figs is not None:
 #     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 #     videoWriter = cv2.VideoWriter(os.path.join(data, algo + ".mp4"), fourcc, 12, (figs[0].shape[1], figs[0].shape[0]), True)
@@ -132,3 +173,14 @@ plt.show()
 #     print('error')
     
 # print(os.path.join(data, algo + ".mp4"))
+
+field_ia = load_dict(os.path.join(data, 'field.pkl'))
+ac_ia = load_model(checkpoint_ia, model_type='ia')
+pygdata = from_networkx(field_ia.working_graph, group_node_attrs=['embed'], group_edge_attrs=['edge_embed'])
+data_t = {'graph': Batch.from_data_list([pygdata]), 'vehicles': car_tensor.unsqueeze(0)}
+info = {'veh_key_padding_mask': torch.zeros((1, len(car_tensor))).bool(), 'num_veh': torch.tensor([[car_tensor.shape[0]]])}
+with torch.no_grad():
+    seq_enc, _, _, _, _, _, _ = ac_ia(data_t, info, deterministic=True, criticize=False, )
+
+T_ia = ia_util.decode(seq_enc[0])
+

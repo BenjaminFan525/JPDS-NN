@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from typing import Tuple, Union, List, Optional
 from geopandas import GeoSeries
-from shapely import geometry
+from shapely import geometry, node
 import utm
 import json
 import networkx as nx
@@ -205,7 +205,7 @@ class multiField():
                     if 'end' not in node1 or self.ends is None:
                         self.working_graph.add_edge(node1, node2, 
                                                     dis=self.whole_D_matrix[idx1, idx2], 
-                                                    edge_embed=torch.Tensor(self.whole_D_matrix[idx1, idx2].flatten())) # 两个节点之间的边由4个距离组成
+                                                    edge_embed=torch.Tensor(self.whole_D_matrix[idx1, idx2].flatten())) # 两个节点之间的边由4个距离组成                            
                     if 'start' not in node1 or self.ends is None:
                         self.working_graph.add_edge(node2, node1, 
                                                     dis=self.whole_D_matrix[idx2, idx1],
@@ -280,6 +280,8 @@ class multiField():
                ax = None, 
                working_lines = True, 
                entry_point = False, 
+               start = True,
+               end = True,
                show = True,
                line_colors = 'blue',
                boundary=False):
@@ -292,12 +294,12 @@ class multiField():
         
         for field, line_color in zip(self.fields, line_colors):
             field.render(ax, working_lines, entry_point, show=False, line_color=line_color, boundary=boundary)
-        
-        [ax.plot(self.Graph.nodes[start]['coord'][0], 
-                self.Graph.nodes[start]['coord'][1], 
-                '*y', 
-                markersize=20) for start in self.starts]
-        if self.ends is not None:
+        if start:
+            [ax.plot(self.Graph.nodes[start]['coord'][0], 
+                    self.Graph.nodes[start]['coord'][1], 
+                    '*y', 
+                    markersize=20) for start in self.starts]
+        if self.ends is not None and end:
             [ax.plot(self.Graph.nodes[end]['coord'][0], 
                     self.Graph.nodes[end]['coord'][1], 
                     'vr', 
@@ -331,6 +333,10 @@ class multiField():
         path = self.get_dijkstra_path(node1, node2, cartesian)
         if not cartesian:
             return path
+        
+        if node1 == node2:
+            path.append(path[0].copy())
+            path[0] = np.append(path[0], self.working_graph.nodes[line2]['direction_angle' if entry1 == 1 else 'anti_direction_angle'])
 
         if 'start' not in line1 and 'end' not in line1:
             path[0] = np.append(path[0], self.working_graph.nodes[line1]['direction_angle' if entry1 == 1 else 'anti_direction_angle'])
@@ -346,8 +352,104 @@ class multiField():
             assert isinstance(num, int), f"input must be integer, got {num}"
             return [random.sample(list(self.Graph.nodes), 1)[0] for _ in range(num)]
     
-    def edit_fields(self, delete_lines):
-        return 0
+    def edit_fields(self, car_status: list, new_ends: list = None):
+        def find_nearest_points(G: nx.Graph, point: np.ndarray, num: int = 1):
+            # 获取图中所有节点的坐标
+            node_positions = {node: np.array(pos) for node, pos in G.nodes(data='coord') if 'b' in node}            # 计算外部点到图中每个节点的欧几里得距离
+            distances = {node: np.linalg.norm(point - pos) for node, pos in node_positions.items()}
+
+            return sorted(distances, key=distances.get)[:num]
+        
+        def find_point(G: nx.Graph, point: np.ndarray):
+            # 获取图中所有节点的坐标
+            for node, pos in G.nodes(data='coord'):
+                if np.allclose(pos, point):
+                    return node
+
+            return None
+            
+        
+        deleted_lines = [[] for _ in range(self.num_fields)]
+        start_lines = []
+        for status in car_status:
+            for line in status['traveled']:
+                field_idx, line_idx = int(line.split('-')[1]), int(line.split('-')[2])
+                deleted_lines[field_idx].append(line_idx)
+            
+            field_idx, line_idx = int(status['line'].split('-')[1]), int(status['line'].split('-')[2])
+            # 作业行内点：将停止点作为新端点
+            if status['inline']:
+                if status['entry'] == 0:
+                    start_lines.append([np.array(self.fields[field_idx].working_lines[line_idx][2:4]),
+                                       np.array(self.fields[field_idx].working_lines[line_idx][4:6])])
+                    # self.fields[field_idx].working_lines[line_idx][2:4] = [status['pos'][0], status['pos'][1]]
+                else:
+                    start_lines.append([np.array(self.fields[field_idx].working_lines[line_idx][4:6]),
+                                       np.array(self.fields[field_idx].working_lines[line_idx][2:4])])
+                    # self.fields[field_idx].working_lines[line_idx][4:6] = [status['pos'][0], status['pos'][1]]
+            else:
+                start_lines.append(None)
+        for delete, f in zip(deleted_lines, self.fields):
+            f.working_lines = [line for idx, line in enumerate(f.working_lines) if idx not in delete] 
+            f.generate_graph()
+
+        upper_points = [self.boundary_coords[1]]
+        lower_points = [self.boundary_coords[0]]
+        for r in range(self.num_splits[1]):
+            split_temp = 0.5 * np.random.random() + 1 / 2 / (self.num_splits[1] - r + 1)
+            upper_points.append(ucommon.get_point(np.array([upper_points[-1], self.boundary_coords[2]]), split_temp))
+            split_temp = 0.5 * np.random.random() + 1 / 2 / (self.num_splits[1] - r + 1)
+            lower_points.append(ucommon.get_point(np.array([lower_points[-1], self.boundary_coords[3]]), split_temp))
+        upper_points.append(self.boundary_coords[2])
+        lower_points.append(self.boundary_coords[3])
+        self.fields_coords = []
+        self.Graph = nx.Graph()
+        self.get_fields(upper_points, lower_points, self.num_splits[0])
+
+        self.Graph: nx.Graph = nx.compose_all([self.Graph] + [field.Graph for field in self.fields])
+
+        for idx, status in enumerate(car_status):
+            if status['inline']:
+                entry, exit = find_point(self.Graph, start_lines[idx][0]), find_point(self.Graph, start_lines[idx][1])
+                self.Graph.add_nodes_from([(f'start-{idx}', {'coord': status['pos']})])
+                self.starts[idx] = f'start-{idx}'
+                self.Graph.add_weighted_edges_from([self.gen_edge(entry, f'start-{idx}')])
+                field_idx, line_idx = int(entry.split('-')[1]), int(entry.split('-')[2])
+                start_line = ucommon.gen_node('line', field_idx, line_idx)
+                length = ucommon.get_euler_dis(self.Graph, f'start-{idx}', exit)
+                self.fields[field_idx].working_lines[line_idx][1] = length
+                if status['entry'] == 0:
+                    self.fields[field_idx].working_lines[line_idx][2:4] = [status['pos'][0], status['pos'][1]]
+                else:
+                    self.fields[field_idx].working_lines[line_idx][4:6] = [status['pos'][0], status['pos'][1]]
+                nx.set_node_attributes(self.fields[field_idx].working_graph, 
+                {start_line:
+                    {'length': length,
+                    f'end{status["entry"]}': f'start-{idx}',
+                    'embed': torch.Tensor([np.sin(self.fields[field_idx].direction_angle), 
+                                           np.cos(self.fields[field_idx].direction_angle), 
+                                           length])
+                    }})
+                start_lines[idx] = start_line
+            else:
+                self.Graph.add_nodes_from([(f'start-{idx}', {'coord': status['pos']})])
+                self.starts[idx] = f'start-{idx}'
+                for point in find_nearest_points(self.Graph, status['pos'], 2):
+                    self.Graph.add_weighted_edges_from([self.gen_edge(f'start-{idx}', point)])
+
+        self.ends = new_ends if new_ends else self.ends
+        self.make_working_graph()
+
+        chosen_idx, chosen_entry = [], []
+        for status, start_line in zip(car_status, start_lines):
+            if status['inline']:
+                chosen_idx.append([list(self.working_graph.nodes()).index(start_line)])
+                chosen_entry.append([status['entry']])
+            else:
+                chosen_idx.append([])
+                chosen_entry.append([])
+
+        return [chosen_idx], [chosen_entry]
         
     
     def merge_field(self, merge_ids : list, num_starts=None, num_ends=None):

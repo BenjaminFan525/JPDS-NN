@@ -379,7 +379,7 @@ class Robot(car):
         
         self.total_distance += self.ave_v * self.T
     
-    def plot(self, color = 'b', mode = 0, ax = None, return_bound = False, show = True):
+    def plot(self, color = 'b', mode = 0, ax = None, return_bound = False, show = True, label=None):
         if show:
             if ax is None:
                 _, ax = plt.subplots()
@@ -395,7 +395,7 @@ class Robot(car):
                 [self.state.x-np.sin(self.state.psi)*self.K / 2 , self.state.y+np.cos(self.state.psi)*self.K / 2],
             ])
             if show:
-                f1 = ax.plot(car_shape[:,0], car_shape[:,1], color = color)
+                f1 = ax.plot(car_shape[:,0], car_shape[:,1], color = color, label=label)
                 f2 = ax.plot(self.state.x, self.state.y, marker = '.', color = color)
                 ax.plot([self.state.x-np.sin(self.state.psi)*self.working_width / 2, self.state.x+np.sin(self.state.psi)*self.working_width / 2],
                         [self.state.y+np.cos(self.state.psi)*self.working_width / 2, self.state.y-np.cos(self.state.psi)*self.working_width / 2],

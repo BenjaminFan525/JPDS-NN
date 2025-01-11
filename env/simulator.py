@@ -162,15 +162,17 @@ class basicSimulator:
 
 class Simulator:
     def __init__(self, path: list, car_list: list, line_nodes: list, lines_id: list, field: multiField, 
-                 working_list: list = None, car_tracking = None, ctrl_period = 0.1, max_step = 5000) -> None:
+                 working_list: list = None, car_tracking = None, ctrl_period = 0.1, max_step = 5000,
+                 time_teriminate=None) -> None:
         self.path_list = path # 路径列表
         self.car_list = car_list # 车辆列表
         self.working_list = working_list if working_list is not None else [[True for _ in range(len(p))] for p in self.path_list]
         self.line_nodes = line_nodes
         self.lines_id = lines_id
         self.field = field
+        self.time_teriminate = time_teriminate
         # self.car_status = ['home', [0, 0]]*len(car_list)
-        self.car_status = [{'line': self.field.nodes_list[0+idx], 'pos': path[0][0], 'inline': False} for idx, _ in enumerate(range(len(car_list)))]
+        self.car_status = [{'line': self.field.nodes_list[0+idx], 'entry': None, 'pos': path[0][0], 'inline': False, 'teriminate': False, 'traveled': []} for idx, _ in enumerate(range(len(car_list)))]
         self.traveled_line = [[] for _ in range(len(car_list))]
         if car_tracking:
             self.car_tracking = car_tracking # 车辆是否跟踪路径
@@ -226,9 +228,10 @@ class Simulator:
                     if len(self.line_nodes[idx]) and np.allclose(self.path_list[idx][0], self.line_nodes[idx][0]):
                         self.line_nodes[idx] = np.delete(self.line_nodes[idx], 0, axis=0)
                         if len(self.line_nodes[idx]) % 2 == 0:
-                            self.traveled_line[idx].append(self.field.working_line_list[self.lines_id[idx].pop(0)[0]])
+                            self.car_status[idx]['traveled'].append(self.field.working_line_list[self.lines_id[idx].pop(0)[0]])
                     
                     self.car_status[idx]['line'] = self.field.working_line_list[self.lines_id[idx][0][0]] if len(self.lines_id[idx]) else self.field.nodes_list[idx+len(self.car_list)]
+                    self.car_status[idx]['entry'] = self.lines_id[idx][0][1] if len(self.lines_id[idx]) else None
                     self.car_status[idx]['pos'] = self.path_list[idx][0]
                     self.car_status[idx]['inline'] = len(self.line_nodes[idx]) % 2 != 0
                     
@@ -237,14 +240,18 @@ class Simulator:
                     if len(self.path_list[idx]) < 2:
                         self.tracking_vector_list[idx] = None
                         car.stop()
+                    elif self.time_teriminate and self.time > self.time_teriminate:
+                        self.car_status[idx]['teriminate'] = True
+                        car.stop()
                     else:
                         self.terminate = False
+                        self.car_status[idx]['teriminate'] = False
                         if hasattr(car, 'working'):
                             car.working = self.working_list[idx][0]
                         t = self.path_list[idx][1] - self.path_list[idx][0]
                         self.tracking_vector_list[idx] = t / np.linalg.norm(t)
                 
-                if self.tracking_vector_list[idx] is not None:
+                if self.tracking_vector_list[idx] is not None and self.car_status[idx]['teriminate'] == False:
                     self.terminate = False
                     car.follow_trail(self.tracking_vector_list[idx], 
                                      self.path_list[idx][0], 
@@ -269,7 +276,7 @@ class Simulator:
         return self.terminate 
 
     # Finish one trajectory
-    def rollout(self, a, render = False, ax = None, update = True, show = True, output_figure = False):
+    def rollout(self, a, render = False, ax = None, update = True, show = True, output_figure = False, label=False):
         # ori_ax = deepcopy(ax)
         
         if render:
@@ -279,10 +286,10 @@ class Simulator:
             ori_ax = len(ax.lines)
             if output_figure:
                 figures = []
-        text = ax.text(0.01, 0.99, 'Initializing', 
-                       horizontalalignment='left', 
-                       verticalalignment='top',
-                       transform=ax.transAxes)
+            # text = ax.text(0.01, 0.99, 'Initializing', 
+            #             horizontalalignment='left', 
+            #             verticalalignment='top',
+            #             transform=ax.transAxes)
         
         while not self.step(a):
             if render:
@@ -290,9 +297,9 @@ class Simulator:
                     if update:
                         while len(ax.lines) > ori_ax:
                             ax.lines.pop()
-                    self.render(ax, show = False)
-                    disp_str = ''.join([f"Car {idx+1} | line {status['line']} | pos {status['pos']} | inline {status['inline']}\n" for idx, status in enumerate(self.car_status)])
-                    text.set_text(disp_str)
+                    self.render(ax, show = False, label=label)
+                    # disp_str = ''.join([f"Car {idx+1} | line {status['line']} | pos ({status['pos'][0]:.2f}, {status['pos'][1]:.2f}) | inline {status['inline']}\n" for idx, status in enumerate(self.car_status)])
+                    # text.set_text(disp_str)
                     if output_figure:
                         canvas = FigureCanvasAgg(plt.gcf())
                         w, h = canvas.get_width_height()
@@ -308,26 +315,30 @@ class Simulator:
 
         return figures if render and output_figure else None
             
-    def pause(self):
-        delete_lines = []
-        new_homes = []
-        for car, line in zip(self.car_status, self.traveled_line):
-            delete_lines += line
-            # new_homes += car['line']
-            if car['inline']:
-                delete_lines += car['line']
+    # def pause(self):
+    #     delete_lines = []
+    #     new_homes = []
+    #     for car, line in zip(self.car_status, self.traveled_line):
+    #         delete_lines += line
+    #         # new_homes += car['line']
+    #         if car['inline']:
+    #             delete_lines += car['line']
         
         
             
             
     
-    def render(self, ax = None, show = True):
+    def render(self, ax = None, show = True, label=False):
         if ax is None:
             _, ax = plt.subplots()
             ax.axis('equal')
 
         for idx, car in enumerate(self.car_list):
-            car.plot(color = COLORS[idx % len(COLORS)], mode = 1, ax = ax)
+            if label:
+                car.plot(color = COLORS[idx % len(COLORS)], mode = 1, ax = ax, label=f'Veh{idx+1}')
+            else:
+                car.plot(color = COLORS[idx % len(COLORS)], mode = 1, ax = ax)
+        ax.legend(fontsize=16, loc='lower left')
 
         # print(self.working_direction)   
         if show:
@@ -441,12 +452,17 @@ class arrangeSimulator():
                 continue
             lines_id[idx] = [line for line in arrange]
             targets.append(self.field.get_path(f'start-{idx}', self.field.working_line_list[arrange[0][0]], 1, arrange[0][1], True))
+            # if len(targets[idx]) > 1:
             ori_working_list.append([False, True])
+            # else:
+            #     ori_working_list.append([False])
             for working_line in arrange:
                 line_name = self.field.working_line_list[working_line[0]]
-                field_idx, line_idx = int(line_name.split('-')[1]), int(line_name.split('-')[2])
-                point_name = [f'line_{working_line[1]}', f'line_{1-working_line[1]}']
-                line_nodes[idx] += [self.field.Graph.nodes[ucommon.gen_node(name, field_idx, line_idx)]['coord'] for name in point_name]
+                point_name = [
+                    self.field.working_graph.nodes[line_name][f'end{working_line[1]}'],
+                    self.field.working_graph.nodes[line_name][f'end{1-working_line[1]}']
+                ]
+                line_nodes[idx] += [self.field.Graph.nodes[name]['coord'] for name in point_name]
             
             for line1, line2 in zip(arrange[:-1], arrange[1:]):
                 delta_target = self.field.get_path(self.field.working_line_list[line1[0]], self.field.working_line_list[line2[0]], 1 - line1[1], line2[1], True)
@@ -493,13 +509,12 @@ class arrangeSimulator():
         ax.legend(fontsize=16, loc='lower left')
         return ax
     
-    def simulate(self, render = False, show = True, output_figure = False):
-        ax = None
-        if render:
+    def simulate(self, ax = None, render = False, show = True, output_figure = False, label = False):
+        if ax == None:
             ax = self.render_arrange()
         
         velosity = np.array([[cfg['vw'], cfg['vv']] for cfg in self.car_cfg])
-        figs = self.simulator.rollout(velosity, render=render, ax=ax, show=show, output_figure=output_figure)
+        figs = self.simulator.rollout(velosity, render=render, ax=ax, show=show, output_figure=output_figure,label=label)
         s = 0
         c = 0
         car_time = []
@@ -514,7 +529,7 @@ class arrangeSimulator():
                 car_time.append(None)
                 car_dis.append(None)
         t = self.simulator.time
-        return t, c, s, car_time, car_dis, figs
+        return t, c, s, car_time, car_dis, ax, figs
 
 if __name__ == "__main__":
     import env.dubins as dubins
@@ -674,8 +689,8 @@ if __name__ == "__main__":
     plt.savefig(path)
     print(path)
     
-    chosen_idx = [[line[0] for line in simulator.simulator.traveled_line[idx]] for idx in range(len(car_cfg))]
-    chosen_entry = [[line[1] for line in simulator.simulator.traveled_line[idx]] for idx in range(len(car_cfg))]
+    # chosen_idx = [[line[0] for line in simulator.simulator.traveled_line[idx]] for idx in range(len(car_cfg))]
+    # chosen_entry = [[line[1] for line in simulator.simulator.traveled_line[idx]] for idx in range(len(car_cfg))]
 
     if figs is not None:
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
