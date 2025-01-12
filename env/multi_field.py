@@ -352,7 +352,7 @@ class multiField():
             assert isinstance(num, int), f"input must be integer, got {num}"
             return [random.sample(list(self.Graph.nodes), 1)[0] for _ in range(num)]
     
-    def edit_fields(self, car_status: list, new_ends: list = None):
+    def edit_fields(self, car_status: list, new_ends: list = None, delete_lines:bool = True):
         def find_nearest_points(G: nx.Graph, point: np.ndarray, num: int = 1):
             # 获取图中所有节点的坐标
             node_positions = {node: np.array(pos) for node, pos in G.nodes(data='coord') if 'b' in node}            # 计算外部点到图中每个节点的欧几里得距离
@@ -365,48 +365,49 @@ class multiField():
             for node, pos in G.nodes(data='coord'):
                 if np.allclose(pos, point):
                     return node
-
             return None
             
-        
         deleted_lines = [[] for _ in range(self.num_fields)]
         start_lines = []
-        for status in car_status:
+        for idx, status in enumerate(car_status):
             for line in status['traveled']:
                 field_idx, line_idx = int(line.split('-')[1]), int(line.split('-')[2])
                 deleted_lines[field_idx].append(line_idx)
             
-            field_idx, line_idx = int(status['line'].split('-')[1]), int(status['line'].split('-')[2])
+            if 'start' not in status['line'] and 'end' not in status['line']:
+                field_idx, line_idx = int(status['line'].split('-')[1]), int(status['line'].split('-')[2])
+            else:
+                start_lines.append(None)
+                continue
             # 作业行内点：将停止点作为新端点
             if status['inline']:
                 if status['entry'] == 0:
                     start_lines.append([np.array(self.fields[field_idx].working_lines[line_idx][2:4]),
                                        np.array(self.fields[field_idx].working_lines[line_idx][4:6])])
-                    # self.fields[field_idx].working_lines[line_idx][2:4] = [status['pos'][0], status['pos'][1]]
                 else:
                     start_lines.append([np.array(self.fields[field_idx].working_lines[line_idx][4:6]),
                                        np.array(self.fields[field_idx].working_lines[line_idx][2:4])])
-                    # self.fields[field_idx].working_lines[line_idx][4:6] = [status['pos'][0], status['pos'][1]]
             else:
                 start_lines.append(None)
-        for delete, f in zip(deleted_lines, self.fields):
-            f.working_lines = [line for idx, line in enumerate(f.working_lines) if idx not in delete] 
-            f.generate_graph()
+        if delete_lines:
+            for delete, f in zip(deleted_lines, self.fields):
+                f.working_lines = [line for idx, line in enumerate(f.working_lines) if idx not in delete] 
+                f.generate_graph()
 
-        upper_points = [self.boundary_coords[1]]
-        lower_points = [self.boundary_coords[0]]
-        for r in range(self.num_splits[1]):
-            split_temp = 0.5 * np.random.random() + 1 / 2 / (self.num_splits[1] - r + 1)
-            upper_points.append(ucommon.get_point(np.array([upper_points[-1], self.boundary_coords[2]]), split_temp))
-            split_temp = 0.5 * np.random.random() + 1 / 2 / (self.num_splits[1] - r + 1)
-            lower_points.append(ucommon.get_point(np.array([lower_points[-1], self.boundary_coords[3]]), split_temp))
-        upper_points.append(self.boundary_coords[2])
-        lower_points.append(self.boundary_coords[3])
-        self.fields_coords = []
-        self.Graph = nx.Graph()
-        self.get_fields(upper_points, lower_points, self.num_splits[0])
+            upper_points = [self.boundary_coords[1]]
+            lower_points = [self.boundary_coords[0]]
+            for r in range(self.num_splits[1]):
+                split_temp = 0.5 * np.random.random() + 1 / 2 / (self.num_splits[1] - r + 1)
+                upper_points.append(ucommon.get_point(np.array([upper_points[-1], self.boundary_coords[2]]), split_temp))
+                split_temp = 0.5 * np.random.random() + 1 / 2 / (self.num_splits[1] - r + 1)
+                lower_points.append(ucommon.get_point(np.array([lower_points[-1], self.boundary_coords[3]]), split_temp))
+            upper_points.append(self.boundary_coords[2])
+            lower_points.append(self.boundary_coords[3])
+            self.fields_coords = []
+            self.Graph = nx.Graph()
+            self.get_fields(upper_points, lower_points, self.num_splits[0])
 
-        self.Graph: nx.Graph = nx.compose_all([self.Graph] + [field.Graph for field in self.fields])
+            self.Graph: nx.Graph = nx.compose_all([self.Graph] + [field.Graph for field in self.fields])
 
         for idx, status in enumerate(car_status):
             if status['inline']:

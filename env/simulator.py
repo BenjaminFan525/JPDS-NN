@@ -228,7 +228,9 @@ class Simulator:
                     if len(self.line_nodes[idx]) and np.allclose(self.path_list[idx][0], self.line_nodes[idx][0]):
                         self.line_nodes[idx] = np.delete(self.line_nodes[idx], 0, axis=0)
                         if len(self.line_nodes[idx]) % 2 == 0:
-                            self.car_status[idx]['traveled'].append(self.field.working_line_list[self.lines_id[idx].pop(0)[0]])
+                            line, entry = self.lines_id[idx].pop(0)
+                            self.traveled_line[idx].append([line, entry])
+                            self.car_status[idx]['traveled'].append(self.field.working_line_list[line])
                     
                     self.car_status[idx]['line'] = self.field.working_line_list[self.lines_id[idx][0][0]] if len(self.lines_id[idx]) else self.field.nodes_list[idx+len(self.car_list)]
                     self.car_status[idx]['entry'] = self.lines_id[idx][0][1] if len(self.lines_id[idx]) else None
