@@ -159,7 +159,6 @@ class MaGNNEncoder(Module):
             self.activation = self.common_cfg['activation']
 
         self.embed_dim = self.common_cfg['embed_dim']
-        self.veh_dim = veh_dim
 
         self.veh_embedding = Embedding_layer(veh_dim, self.embed_dim, embedding_layer, 
                                              activation=self.activation, **self.factory_kwargs)
@@ -217,9 +216,9 @@ class MaGNNEncoder(Module):
             veh_depot_attn = []
             for idx in range(veh.shape[1]):
                 mask = node_key_padding_mask.clone()
-                mask[:, :2*self.veh_dim] = True
+                mask[:, :2*veh.shape[1]] = True
                 mask[:, idx] = False
-                mask[:, idx+self.veh_dim] = False                  
+                mask[:, idx+veh.shape[1]] = False                  
                 veh_depot_attn.append(self.cross_attn(veh, nodes, nodes, key_padding_mask=mask)[0][:,idx,:].unsqueeze(1))
 
             veh = torch.cat(veh_depot_attn, dim=1) + \
@@ -874,20 +873,6 @@ class GNNAC(Module):
                                dim=-1)
 
         node_key_padding_mask[:, 0:1] = True
-        
-        start_mask = [node_key_padding_mask.clone()[r, :M[r]].unsqueeze(0) for r in range(node_key_padding_mask.shape[0])]
-        end_mask = [node_key_padding_mask.clone()[r, M[r]:2*M[r]].unsqueeze(0) for r in range(node_key_padding_mask.shape[0])]
-        node_mask = [node_key_padding_mask.clone()[r, 2*M[r]:].unsqueeze(0) for r in range(node_key_padding_mask.shape[0])]
-
-        input_mask = []
-        for s, e, n in zip(start_mask, end_mask, node_mask):
-            e[:, :] = True
-            if ~torch.all(s):
-                e[:, 0:1] = False
-                s[:, :] = True
-            input_mask.append(torch.cat((s, e, n), dim=1))
-
-        input_mask = torch.cat(input_mask, dim=0)
 
         seq_embed, slice_embed = self.sel_enc.reset_buffer(bsz, zero_node, veh[:, 0:1], veh, veh_key_padding_mask)
 
@@ -916,6 +901,20 @@ class GNNAC(Module):
                     for node_idx in arrange:
                         node_key_padding_mask[bsz_idx][node_idx] = True
             idx_in_seq = torch.zeros((bsz, 1), dtype=int, device=info['num_veh'].device)
+
+        start_mask = [node_key_padding_mask.clone()[r, :M[r]].unsqueeze(0) for r in range(node_key_padding_mask.shape[0])]
+        end_mask = [node_key_padding_mask.clone()[r, M[r]:2*M[r]].unsqueeze(0) for r in range(node_key_padding_mask.shape[0])]
+        node_mask = [node_key_padding_mask.clone()[r, 2*M[r]:].unsqueeze(0) for r in range(node_key_padding_mask.shape[0])]
+
+        input_mask = []
+        for s, e, n in zip(start_mask, end_mask, node_mask):
+            e[:, :] = True
+            if ~torch.all(s):
+                e[:, 0:1] = False
+                s[:, :] = True
+            input_mask.append(torch.cat((s, e, n), dim=1))
+
+        input_mask = torch.cat(input_mask, dim=0)
 
         while torch.any(key_mask):
             if self.sel_enc.embed_slice:

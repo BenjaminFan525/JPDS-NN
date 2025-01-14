@@ -300,6 +300,7 @@ class Field():
                     self.gen_edge(ucommon.gen_node('line_b_1', self.field_num, idx), ucommon.gen_node('bound', self.field_num, (line[-1] + 1) if line[-1] < (self.num_whole_coords - 1) else 0)),
                     self.gen_edge(ucommon.gen_node('line_b_1', self.field_num, idx), ucommon.gen_node('bound', self.field_num, line[-1])),
                 ])
+        line = self.working_lines[-1].copy()
         self.Graph.add_weighted_edges_from([
             self.gen_edge(ucommon.gen_node('line_b_0', self.field_num, idx), ucommon.gen_node('bound', self.field_num, line[-2])),
             self.gen_edge(ucommon.gen_node('line_b_0', self.field_num, idx), ucommon.gen_node('bound', self.field_num, (line[-2] + 1) if line[-2] < (self.num_whole_coords - 1) else 0)),

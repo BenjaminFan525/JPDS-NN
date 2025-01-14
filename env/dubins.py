@@ -563,6 +563,9 @@ class Dubins:
                         in_straight = True
                         straight.append(1)
         points.append(end[:2])
+        if not straight:
+            straight.append(start)
+
         straight.append(straight[-1])
         return np.array(points), straight, total
 

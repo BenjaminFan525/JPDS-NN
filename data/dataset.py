@@ -1,3 +1,4 @@
+from random import shuffle
 from torch.utils import data
 from utils.common import load_dict
 import os
@@ -74,11 +75,9 @@ class RLDataset(data.Dataset):
 
 
 class RLTestDataset(data.Dataset):
-    def __init__(self, data: list, reciprocal: bool=False, cost_dict = None, use_field: bool=False) -> None:
+    def __init__(self, data: list, use_field: bool=False) -> None:
         super().__init__()
         self.data = data
-        self.reciprocal = reciprocal
-        self.cost_dict = cost_dict
         self.use_field = use_field
 
     def __getitem__(self, index):

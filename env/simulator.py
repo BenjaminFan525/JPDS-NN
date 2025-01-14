@@ -186,6 +186,8 @@ class Simulator:
             if len(path) < 2:
                 self.tracking_vector_list.append(None)
             else:
+                while np.allclose(path[0], path[1]):
+                    path = path[1:, :]
                 t = path[1] - path[0]
                 t = t / np.linalg.norm(t)
                 self.tracking_vector_list.append(t)
@@ -490,6 +492,8 @@ class arrangeSimulator():
         for idx, path in enumerate(self.paths):
             if len(path) < 2:
                 continue
+            while np.allclose(path[0], path[1]):
+                path = path[1:, :]
             first_dir_tmp = path[1] - path[0]
             first_dir[idx] = np.arctan2(first_dir_tmp[1], first_dir_tmp[0])
 
@@ -497,7 +501,7 @@ class arrangeSimulator():
                  state_ini=[path[0, 0], path[0, 1], 0, 0, f_dir, 0], debug=debug) 
             for path, f_dir, cfg in zip(self.paths, first_dir, self.car_cfg)]
             
-        self.simulator = Simulator(self.paths, cars, line_nodes, lines_id, self.field, working_list, max_step=50000)
+        self.simulator = Simulator(self.paths, cars, line_nodes, lines_id, self.field, working_list, max_step=1000000)
         self.simulator.set_drive_mode(drive_mode)
         return self.paths, working_list, info_list
         
@@ -512,7 +516,7 @@ class arrangeSimulator():
         return ax
     
     def simulate(self, ax = None, render = False, show = True, output_figure = False, label = False):
-        if ax == None:
+        if ax == None and render:
             ax = self.render_arrange()
         
         velosity = np.array([[cfg['vw'], cfg['vv']] for cfg in self.car_cfg])
