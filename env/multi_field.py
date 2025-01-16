@@ -352,7 +352,7 @@ class multiField():
             assert isinstance(num, int), f"input must be integer, got {num}"
             return [random.sample(list(self.Graph.nodes), 1)[0] for _ in range(num)]
     
-    def edit_fields(self, car_status: list, new_ends: list = None, delete_lines:bool = True):
+    def edit_fields(self, car_status: list, new_ends: list = None, delete_lines:bool = True, fields_sel:list = 'all', veh_del:list = []):
         def find_nearest_points(G: nx.Graph, point: np.ndarray, num: int = 1):
             # 获取图中所有节点的坐标
             node_positions = {node: np.array(pos) for node, pos in G.nodes(data='coord') if 'b' in node}            # 计算外部点到图中每个节点的欧几里得距离
@@ -439,7 +439,11 @@ class multiField():
                     self.Graph.add_weighted_edges_from([self.gen_edge(f'start-{idx}', point)])
 
         self.ends = new_ends if new_ends else self.ends
-        self.make_working_graph()
+
+        self.starts = [self.starts[i] for i in range(len(self.starts)) if i not in veh_del]
+        self.ends = [self.ends[i] for i in range(len(self.ends)) if i not in veh_del]
+
+        self.make_working_graph(fields_sel)
 
         chosen_idx, chosen_entry = [], []
         for status, start_line in zip(car_status, start_lines):

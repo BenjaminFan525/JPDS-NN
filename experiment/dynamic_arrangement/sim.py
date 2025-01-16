@@ -43,98 +43,99 @@ def simulate(data_loader, model, save_dir, model_type='mdvrp', stop_coeff=0.5, f
     tqdm_data_loader = tqdm(data_loader)
     tqdm_data_loader.set_description('Simulation')
     for batch_idx, batch in enumerate(tqdm_data_loader):
-        bsz_data, bsz_data_ia, info, fields, fields_ia, car_cfgs, _ = batch
+        if batch_idx >= 600:
+            bsz_data, bsz_data_ia, info, fields, fields_ia, car_cfgs, _ = batch
 
-        if model_type == 'mdvrp':
-            # Full forward pass through the dataset
-            with torch.no_grad():
-                seq_enc, _, _, _, _, _, _ = model(bsz_data, info, deterministic=True, criticize=False)
-            Ts = list(map(decode, seq_enc))
-        else:
-            with torch.no_grad():
-                seq_enc, _, _, _, _, _, _ = model(bsz_data_ia, info, deterministic=True, criticize=False)
-            Ts = list(map(ia_util.decode, seq_enc))
-
-        for idx, (T, field, car_cfg) in enumerate(zip(Ts, fields, car_cfgs)):
-            simulator = arrangeSimulator(field, car_cfg)
-            simulator.init_simulation(T)
-
-            if batch_idx % fig_interval == 0:
-                ax = simulator.field.render(working_lines=False, show=False, start=True)
-                t0, c0, s0, _, _, _, _ = simulator.simulate(ax, True, False, False, True)
-                plt.title(f'$s_P$={np.round(s0, 2)}m, $t_P$={np.round(t0, 2)}s, $c_P$={np.round(c0, 2)}L', fontsize=20)
-                plt.savefig(os.path.join(save_dir, f"batch{batch_idx}_{model_type}_ori.png"))
-                plt.close('all')
-            else:
-                ax = None
-                t0, c0, s0, _, _, _, _ = simulator.simulate(ax, False, False, False, True)
-            # print(f"Original result: s={np.round(s0, 2)}m, t={np.round(t0, 2)}s, c={np.round(c0, 2)}L")
-            s_ori.append(np.round(s0, 2))
-            t_ori.append(np.round(t0, 2))
-            c_ori.append(np.round(c0, 2))
-
-            simulator = arrangeSimulator(field, car_cfg)
-            simulator.init_simulation(T)
-            simulator.simulator.time_teriminate = t0*stop_coeff
-            # print(f't_term: {simulator.simulator.time_teriminate}')
-            if batch_idx % fig_interval == 0:
-                ax = simulator.field.render(working_lines=False, show=False, start=False)
-                if render:
-                    t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, True, True, False, True)
-                else:
-                    t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, True, False, False, True)
-            else:
-                ax = None
-                t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, False, False, False, True)
-            # print(f't_term_real: {t1}')
             if model_type == 'mdvrp':
-                chosen_idx, chosen_entry = field.edit_fields(simulator.simulator.car_status)
-                pygdata = from_networkx(field.working_graph, group_node_attrs=['embed'], group_edge_attrs=['edge_embed'])
-                bsz_data['graph'] = Batch.from_data_list([pygdata])
+                # Full forward pass through the dataset
                 with torch.no_grad():
-                    seq_enc, _, _, _, _, _, _ = model(bsz_data, info, deterministic=True, criticize=False, 
-                                                    force_chosen=True, 
-                                                    chosen_idx=chosen_idx, chosen_entry=chosen_entry)
-                T = decode(seq_enc[0])
+                    seq_enc, _, _, _, _, _, _ = model(bsz_data, info, deterministic=True, criticize=False)
+                Ts = list(map(decode, seq_enc))
             else:
-                field.edit_fields(simulator.simulator.car_status, delete_lines=False)
-                chosen_idx = [[[line[0]+1 for line in simulator.simulator.traveled_line[idx]] for idx in range(len(car_cfg))]]
-                chosen_entry = [[[line[1] for line in simulator.simulator.traveled_line[idx]] for idx in range(len(car_cfg))]]
                 with torch.no_grad():
-                    seq_enc, _, _, _, _, _, _ = model(bsz_data, info, deterministic=True, criticize=False, 
-                                                    force_chosen=True, 
-                                                    chosen_idx=chosen_idx, chosen_entry=chosen_entry)                
-                T_ori = T
-                T = [a[len(c):] for a, c  in zip(T_ori, chosen_idx[0])]
-            
-            simulator = arrangeSimulator(field, car_cfg)
-            simulator.init_simulation(T)
+                    seq_enc, _, _, _, _, _, _ = model(bsz_data_ia, info, deterministic=True, criticize=False)
+                Ts = list(map(ia_util.decode, seq_enc))
 
-            if batch_idx % fig_interval == 0:
-                [ax.plot(field.Graph.nodes[start]['coord'][0], 
-                                    field.Graph.nodes[start]['coord'][1], 
-                                    '*y', 
-                                    markersize=20) for start in field.starts]
-                if render:
-                    t2, c2, s2, car_time, car_dis, ax, figs2 = simulator.simulate(ax, True, True, False, False)
-                    if figs1 and figs2:
-                        figs = figs1 + figs2
-                        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                        videoWriter = cv2.VideoWriter(os.path.join(save_dir, f"batch{batch_idx}_{model_type}.mp4"), fourcc, 12, (figs[0].shape[1], figs[0].shape[0]), True)
-                        for fig in figs:
-                            videoWriter.write(fig)
-                        videoWriter.release() 
+            for idx, (T, field, car_cfg) in enumerate(zip(Ts, fields, car_cfgs)):
+                simulator = arrangeSimulator(field, car_cfg)
+                simulator.init_simulation(T)
+
+                if batch_idx % fig_interval == 0:
+                    ax = simulator.field.render(working_lines=False, show=False, start=True)
+                    t0, c0, s0, _, _, _, _ = simulator.simulate(ax, True, False, False, True)
+                    plt.title(f'$s_P$={np.round(s0, 2)}m, $t_P$={np.round(t0, 2)}s, $c_P$={np.round(c0, 2)}L', fontsize=20)
+                    plt.savefig(os.path.join(save_dir, f"batch{batch_idx}_{model_type}_ori.png"))
+                    plt.close('all')
                 else:
-                    t2, c2, s2, car_time, car_dis, ax, figs2 = simulator.simulate(ax, True, False, False, False)
-                plt.title(f'$s_P$={np.round(s1+s2, 2)}m, $t_P$={np.round(t1+t2, 2)}s, $c_P$={np.round(c1+c2, 2)}L', fontsize=20)
-                plt.savefig(os.path.join(save_dir, f"batch{batch_idx}_{model_type}_rec.png"))
-                plt.close('all')
-            else:
-                t2, c2, s2, car_time, car_dis, ax, figs2 = simulator.simulate(ax, False, False, False, False)
+                    ax = None
+                    t0, c0, s0, _, _, _, _ = simulator.simulate(ax, False, False, False, True)
+                # print(f"Original result: s={np.round(s0, 2)}m, t={np.round(t0, 2)}s, c={np.round(c0, 2)}L")
+                s_ori.append(np.round(s0, 2))
+                t_ori.append(np.round(t0, 2))
+                c_ori.append(np.round(c0, 2))
 
-            s_rec.append(np.round(s1+s2, 2))
-            t_rec.append(np.round(t1+t2, 2))
-            c_rec.append(np.round(c1+c2, 2))          
+                simulator = arrangeSimulator(field, car_cfg)
+                simulator.init_simulation(T)
+                simulator.simulator.time_teriminate = t0*stop_coeff
+                # print(f't_term: {simulator.simulator.time_teriminate}')
+                if batch_idx % fig_interval == 0:
+                    ax = simulator.field.render(working_lines=False, show=False, start=False)
+                    if render:
+                        t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, True, True, False, True)
+                    else:
+                        t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, True, False, False, True)
+                else:
+                    ax = None
+                    t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, False, False, False, True)
+                # print(f't_term_real: {t1}')
+                if model_type == 'mdvrp':
+                    chosen_idx, chosen_entry = field.edit_fields(simulator.simulator.car_status)
+                    pygdata = from_networkx(field.working_graph, group_node_attrs=['embed'], group_edge_attrs=['edge_embed'])
+                    bsz_data['graph'] = Batch.from_data_list([pygdata])
+                    with torch.no_grad():
+                        seq_enc, _, _, _, _, _, _ = model(bsz_data, info, deterministic=True, criticize=False, 
+                                                        force_chosen=True, 
+                                                        chosen_idx=chosen_idx, chosen_entry=chosen_entry)
+                    T = decode(seq_enc[0])
+                else:
+                    field.edit_fields(simulator.simulator.car_status, delete_lines=False)
+                    chosen_idx = [[[line[0]+1 for line in simulator.simulator.traveled_line[idx]] for idx in range(len(car_cfg))]]
+                    chosen_entry = [[[line[1] for line in simulator.simulator.traveled_line[idx]] for idx in range(len(car_cfg))]]
+                    with torch.no_grad():
+                        seq_enc, _, _, _, _, _, _ = model(bsz_data, info, deterministic=True, criticize=False, 
+                                                        force_chosen=True, 
+                                                        chosen_idx=chosen_idx, chosen_entry=chosen_entry)                
+                    T_ori = T
+                    T = [a[len(c):] for a, c  in zip(T_ori, chosen_idx[0])]
+                
+                simulator = arrangeSimulator(field, car_cfg)
+                simulator.init_simulation(T)
+
+                if batch_idx % fig_interval == 0:
+                    [ax.plot(field.Graph.nodes[start]['coord'][0], 
+                                        field.Graph.nodes[start]['coord'][1], 
+                                        '*y', 
+                                        markersize=20) for start in field.starts]
+                    if render:
+                        t2, c2, s2, car_time, car_dis, ax, figs2 = simulator.simulate(ax, True, True, False, False)
+                        if figs1 and figs2:
+                            figs = figs1 + figs2
+                            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                            videoWriter = cv2.VideoWriter(os.path.join(save_dir, f"batch{batch_idx}_{model_type}.mp4"), fourcc, 12, (figs[0].shape[1], figs[0].shape[0]), True)
+                            for fig in figs:
+                                videoWriter.write(fig)
+                            videoWriter.release() 
+                    else:
+                        t2, c2, s2, car_time, car_dis, ax, figs2 = simulator.simulate(ax, True, False, False, False)
+                    plt.title(f'$s_P$={np.round(s1+s2, 2)}m, $t_P$={np.round(t1+t2, 2)}s, $c_P$={np.round(c1+c2, 2)}L', fontsize=20)
+                    plt.savefig(os.path.join(save_dir, f"batch{batch_idx}_{model_type}_rec.png"))
+                    plt.close('all')
+                else:
+                    t2, c2, s2, car_time, car_dis, ax, figs2 = simulator.simulate(ax, False, False, False, False)
+
+                s_rec.append(np.round(s1+s2, 2))
+                t_rec.append(np.round(t1+t2, 2))
+                c_rec.append(np.round(c1+c2, 2))          
             
     return {'s-ori':np.mean(s_ori),
             't-ori':np.mean(t_ori),
