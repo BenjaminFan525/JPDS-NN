@@ -73,51 +73,52 @@ field = multiField(num_splits=[1, 1],
 field.from_ia(field_ia)
 field_list = [0, 3]
 field.make_working_graph(field_list)
+field_ia.make_working_graph(field_list)
 
 ac = load_model(checkpoint)
 ac.sequential_sel = True
 
 pygdata = from_networkx(field.working_graph, group_node_attrs=['embed'], group_edge_attrs=['edge_embed'])
 data_t = {'graph': Batch.from_data_list([pygdata]), 'vehicles': car_tensor.unsqueeze(0)}
-info = {'veh_key_padding_mask': torch.zeros((1, len(car_tensor))).bool(), 'num_veh': torch.tensor([[car_tensor.shape[0]]])}
+veh_key_padding_mask = torch.zeros((1, len(car_tensor))).bool()
+info = {'veh_key_padding_mask': veh_key_padding_mask, 'num_veh': torch.tensor([[car_tensor.shape[0]]])}
 
 with torch.no_grad():
     seq_enc, _, _, _, _, _, _ = ac(data_t, info, deterministic=True, criticize=False, )
 T = decode(seq_enc[0])
 
-print(f"Simulator initializng...")
 simulator = arrangeSimulator(field, car_cfg)
 simulator.init_simulation(T, debug=True)
-# # simulator.render_arrange()
-# # s, t, c = fit(field.D_matrix, 
-# #                 field.ori, 
-# #                 field.des,
-# #                 car_cfg, 
-# #                 field.line_length,
-# #                 T, 
-# #                 tS_t=False,
-# #                 type='all')
-# # plt.title(f'$s_P$={np.round(s, 2)}m, $t_P$={np.round(t, 2)}s, $c_P$={np.round(c, 2)}L', fontsize=20)
+t, c, s, _, _, _, _ = simulator.simulate(None, False, False, False, False)
+print(f"MDVRP result: s={np.round(s, 2)}m, t={np.round(t, 2)}s, c={np.round(c, 2)}L")
 
-ax = simulator.field.render(working_lines=False, show=False, start=False)
-t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, False, False, False, True)
-print(f"Simulation result: s={np.round(s1, 2)}m, t={np.round(t1, 2)}s, c={np.round(c1, 2)}L")
+ac_ia = load_model(checkpoint_ia, model_type='ia')
+pygdata = from_networkx(field_ia.working_graph, group_node_attrs=['embed'], group_edge_attrs=['edge_embed'])
+data_t = {'graph': Batch.from_data_list([pygdata]), 'vehicles': car_tensor.unsqueeze(0)}
+info = {'veh_key_padding_mask': torch.zeros((1, len(car_tensor))).bool(), 'num_veh': torch.tensor([[car_tensor.shape[0]]])}
+with torch.no_grad():
+    seq_enc, _, _, _, _, _, _ = ac_ia(data_t, info, deterministic=True, criticize=False, )
+
+T_ia = ia_util.decode(seq_enc[0])
+
+simulator = arrangeSimulator(field, car_cfg)
+simulator.init_simulation(T_ia, debug=True)
+t_ia, c_ia, s_ia, _, _, _, _ = simulator.simulate(None, False, False, False, False)
+print(f"IA result: s={np.round(s_ia, 2)}m, t={np.round(t_ia, 2)}s, c={np.round(c_ia, 2)}L")
+
+if t < t_ia:
+    T0 = T
+    t0 = t
+else:
+    T0 = T_ia
+    t0 = t_ia
+
+# ============================ dynamic arrangement ============================
 
 print(f"Simulator initializng...")
 simulator = arrangeSimulator(field, car_cfg)
-simulator.init_simulation(T, debug=True)
-# # simulator.render_arrange()
-# s, t, c = fit(field.D_matrix, 
-#                 field.ori, 
-#                 field.des,
-#                 car_cfg, 
-#                 field.line_length,
-#                 T, 
-#                 tS_t=False,
-#                 type='all')
-# # plt.title(f'$s_P$={np.round(s, 2)}m, $t_P$={np.round(t, 2)}s, $c_P$={np.round(c, 2)}L', fontsize=20)
-
-simulator.simulator.time_teriminate = t1*0.5
+simulator.init_simulation(T0, debug=True)
+simulator.simulator.time_teriminate = t0*0.5
 ax = simulator.field.render(working_lines=False, show=False, start=False)
 t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, True, True, True, True)
 print(f"Simulator paused")
@@ -125,7 +126,6 @@ for idx, status in enumerate(simulator.simulator.car_status):
     print(f"Car {idx+1} | line {status['line']} | entry {status['entry']} | pos ({status['pos'][0]:3.2f}, {status['pos'][1]:3.2f}) | inline {status['inline']}")
 
 chosen_idx, chosen_entry = field.edit_fields(simulator.simulator.car_status)
-# field.render(working_lines=True, show=False)
 
 pygdata = from_networkx(field.working_graph, group_node_attrs=['embed'], group_edge_attrs=['edge_embed'])
 data_t = {'graph': Batch.from_data_list([pygdata]), 'vehicles': car_tensor.unsqueeze(0)}
@@ -140,23 +140,14 @@ T = decode(seq_enc[0])
 print(f"Simulator restarting...")
 simulator = arrangeSimulator(field, car_cfg)
 simulator.init_simulation(T, debug=True)
-# s, t, c = fit(field.D_matrix, 
-#                 field.ori, 
-#                 field.des,
-#                 car_cfg, 
-#                 field.line_length,
-#                 T, 
-#                 tS_t=False,
-#                 type='all')
-# # plt.title(f'$s_P$={np.round(s, 2)}m, $t_P$={np.round(t, 2)}s, $c_P$={np.round(c, 2)}L', fontsize=20)
 [ax.plot(field.Graph.nodes[start]['coord'][0], 
                     field.Graph.nodes[start]['coord'][1], 
                     '*y', 
                     markersize=20) for start in field.starts]
-t2, c2, s2, car_time, car_dis, ax, figs2 = simulator.simulate(ax, True, True, True, False)
+t2, c2, s2, _, _, _, figs2 = simulator.simulate(ax, True, True, True, False)
 
 print(f"Simulation result: s={np.round(s1+s2, 2)}m, t={np.round(t1+t2, 2)}s, c={np.round(c1+c2, 2)}L")
-# plt.show()
+plt.close('all')
 
 
 figs = figs1 + figs2
@@ -173,8 +164,7 @@ else:
 print(os.path.join(data, algo + '_field' + ".mp4"))
 plt.close('all')
 
-# ============================ IA model ============================
-
+# ============================ dynamic arrangement ============================
 field = multiField(num_splits=[1, 1], 
                        starts=['bound-2-1', 
                                'bound-2-1', 
@@ -189,45 +179,14 @@ field = multiField(num_splits=[1, 1],
                        )
 
 field_ia = load_dict(os.path.join(data, 'field.pkl'))
-field.from_ia(field_ia)
-field_list = [0, 3]
 field_ia.make_working_graph(field_list)
+field.from_ia(field_ia)
 field.make_working_graph(field_list)
 
-ac_ia = load_model(checkpoint_ia, model_type='ia')
-pygdata = from_networkx(field_ia.working_graph, group_node_attrs=['embed'], group_edge_attrs=['edge_embed'])
-data_t = {'graph': Batch.from_data_list([pygdata]), 'vehicles': car_tensor.unsqueeze(0)}
-info = {'veh_key_padding_mask': torch.zeros((1, len(car_tensor))).bool(), 'num_veh': torch.tensor([[car_tensor.shape[0]]])}
-with torch.no_grad():
-    seq_enc, _, _, _, _, _, _ = ac_ia(data_t, info, deterministic=True, criticize=False, )
-
-T_ia = ia_util.decode(seq_enc[0])
-
 print(f"Simulator initializng...")
 simulator = arrangeSimulator(field, car_cfg)
-simulator.init_simulation(T_ia, debug=True)
-# simulator.render_arrange()
-s, t, c = fit(field.D_matrix, 
-                field.ori, 
-                field.des,
-                car_cfg, 
-                field.line_length,
-                T_ia, 
-                tS_t=False,
-                type='all')
-# plt.title(f'$s_P$={np.round(s, 2)}m, $t_P$={np.round(t, 2)}s, $c_P$={np.round(c, 2)}L', fontsize=20)
-
-ax = simulator.field.render(working_lines=False, show=False, start=False)
-t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, False, False, False, True)
-print(f"Simulation result: s={np.round(s1, 2)}m, t={np.round(t1, 2)}s, c={np.round(c1, 2)}L")
-
-print(f"Simulator initializng...")
-simulator = arrangeSimulator(field, car_cfg)
-simulator.init_simulation(T_ia, debug=True)
-# simulator.render_arrange()
-# plt.title(f'$s_P$={np.round(s, 2)}m, $t_P$={np.round(t, 2)}s, $c_P$={np.round(c, 2)}L', fontsize=20)
-
-simulator.simulator.time_teriminate = t1*0.5
+simulator.init_simulation(T0, debug=True)
+simulator.simulator.time_teriminate = t0*0.5
 ax = simulator.field.render(working_lines=False, show=False, start=False)
 t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, True, True, True, True)
 print(f"Simulator paused")
@@ -265,23 +224,13 @@ print(f"Simulator restarting...")
 
 simulator = arrangeSimulator(field, car_cfg)
 simulator.init_simulation(T, debug=True)
-s, t, c = fit(field.D_matrix, 
-                field.ori, 
-                field.des,
-                car_cfg, 
-                field.line_length,
-                T, 
-                tS_t=False,
-                type='all')
-# # plt.title(f'$s_P$={np.round(s, 2)}m, $t_P$={np.round(t, 2)}s, $c_P$={np.round(c, 2)}L', fontsize=20)
 [ax.plot(field.Graph.nodes[start]['coord'][0], 
                     field.Graph.nodes[start]['coord'][1], 
                     '*y', 
                     markersize=20) for start in field.starts]
-t2, c2, s2, car_time, car_dis, ax, figs2 = simulator.simulate(ax, True, True, True, False)
+t2, c2, s2, _, _, _, figs2 = simulator.simulate(ax, True, True, True, False)
 
 print(f"Simulation result: s={np.round(s1+s2, 2)}m, t={np.round(t1+t2, 2)}s, c={np.round(c1+c2, 2)}L")
-plt.show()
 
 figs = figs1 + figs2
 if figs is not None:
