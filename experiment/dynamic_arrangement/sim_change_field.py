@@ -34,7 +34,7 @@ def load_model(checkpoint, model_type='mdvrp'):
     return ac
 
 
-def simulate(data_loader, model, save_dir, model_type='mdvrp', stop_coeff=0.5, fig_interval = 10, pid = 0, render = False):
+def simulate(data_loader, model, model_ia, save_dir, stop_coeff=0.5, field_list=[0, 1], fig_interval = 10, pid = 0, render = False):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
@@ -55,15 +55,42 @@ def simulate(data_loader, model, save_dir, model_type='mdvrp', stop_coeff=0.5, f
                 seq_enc, _, _, _, _, _, _ = model(bsz_data_ia, info, deterministic=True, criticize=False)
             Ts = list(map(ia_util.decode, seq_enc))
 
-        for idx, (T, field, car_cfg) in enumerate(zip(Ts, fields, car_cfgs)):
+        for idx, (T, field, field_ia,car_cfg) in enumerate(zip(Ts, fields, fields_ia, car_cfgs)):
+            field.make_working_graph(field_list)
+            field_ia.make_working_graph(field_list)
+
+            pygdata = from_networkx(field.working_graph, group_node_attrs=['embed'], group_edge_attrs=['edge_embed'])
+            bsz_data['graph'] = Batch.from_data_list([pygdata])
+            with torch.no_grad():
+                seq_enc, _, _, _, _, _, _ = model(bsz_data, info, deterministic=True, criticize=False, )
+            T = decode(seq_enc[0])
+
             simulator = arrangeSimulator(field, car_cfg)
-            simulator.init_simulation(T)
+            simulator.init_simulation(T, debug=True)
+            t, c, s, _, _, _, _ = simulator.simulate(None, False, False, False, False)
+
+            pygdata = from_networkx(field_ia.working_graph, group_node_attrs=['embed'], group_edge_attrs=['edge_embed'])
+            bsz_data_ia['graph'] = Batch.from_data_list([pygdata])
+            with torch.no_grad():
+                seq_enc, _, _, _, _, _, _ = model_ia(bsz_data_ia, info, deterministic=True, criticize=False, )
+            T_ia = ia_util.decode(seq_enc[0])            
+            
+            simulator = arrangeSimulator(field, car_cfg)
+            simulator.init_simulation(T_ia, debug=True)
+            t_ia, c_ia, s_ia, _, _, _, _ = simulator.simulate(None, False, False, False, False)            
+            
+            if t < t_ia:
+                T0 = T
+                t0 = t
+            else:
+                T0 = T_ia
+                t0 = t_ia
 
             if batch_idx % fig_interval == 0:
                 ax = simulator.field.render(working_lines=False, show=False, start=True)
                 t0, c0, s0, _, _, _, _ = simulator.simulate(ax, True, False, False, True)
                 plt.title(f'$s_P$={np.round(s0, 2)}m, $t_P$={np.round(t0, 2)}s, $c_P$={np.round(c0, 2)}L', fontsize=20)
-                plt.savefig(os.path.join(save_dir, f"proc{pid}_batch{batch_idx}_{model_type}_ori.png"))
+                plt.savefig(os.path.join(save_dir, f"process{pid}_batch{batch_idx}_{model_type}_ori.png"))
                 plt.close('all')
             else:
                 ax = None
@@ -127,7 +154,7 @@ def simulate(data_loader, model, save_dir, model_type='mdvrp', stop_coeff=0.5, f
                 else:
                     t2, c2, s2, car_time, car_dis, ax, figs2 = simulator.simulate(ax, True, False, False, False)
                 plt.title(f'$s_P$={np.round(s1+s2, 2)}m, $t_P$={np.round(t1+t2, 2)}s, $c_P$={np.round(c1+c2, 2)}L', fontsize=20)
-                plt.savefig(os.path.join(save_dir, f"proc{pid}_batch{batch_idx}_{model_type}_rec.png"))
+                plt.savefig(os.path.join(save_dir, f"process{pid}_batch{batch_idx}_{model_type}_rec.png"))
                 plt.close('all')
             else:
                 ax = None
@@ -137,7 +164,7 @@ def simulate(data_loader, model, save_dir, model_type='mdvrp', stop_coeff=0.5, f
             t_rec.append(np.round(t1+t2, 2))
             c_rec.append(np.round(c1+c2, 2))          
             
-    with open(os.path.join(save_dir, f'result_proc{pid}_{model_type}.txt'), 'w') as f:
+    with open(os.path.join(save_dir, f'result_{model_type}.txt'), 'w') as f:
         for lst in [s_ori, t_ori, c_ori, s_rec, t_rec, c_rec]:
             f.write(' '.join(map(str, lst)) + '\n')
     return {'s-ori':np.mean(s_ori),

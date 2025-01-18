@@ -11,6 +11,8 @@ __pycache__/
 data/Gdataset
 result
 *.zip
+*.pkl
+*.txt
 
 */logs
 

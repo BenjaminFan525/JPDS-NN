@@ -554,7 +554,11 @@ class Dubins:
                 straight.append(0)
             else: # Straight segment
                 if self.dense_straight:
-                    coeff = (x-abs(path[0])*self.radius)/dist_straight
+                    if dist_straight == 0:
+                        coeff = 0  # 或者设置其他合适的默认值
+                    else:
+                        coeff = (x - abs(path[0]) * self.radius) / dist_straight
+                    # coeff = (x-abs(path[0])*self.radius)/dist_straight
                     points.append(coeff*fin + (1-coeff)*ini)
                     straight.append(1)
                 else:

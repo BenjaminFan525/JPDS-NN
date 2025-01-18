@@ -390,22 +390,26 @@ class multiField():
             else:
                 start_lines.append(None)
         if delete_lines:
+            for node in list(self.Graph.nodes()):
+                if 'line' in node:
+                    self.Graph.remove_node(node)
+            
             for delete, f in zip(deleted_lines, self.fields):
                 f.working_lines = [line for idx, line in enumerate(f.working_lines) if idx not in delete] 
                 f.generate_graph()
 
-            upper_points = [self.boundary_coords[1]]
-            lower_points = [self.boundary_coords[0]]
-            for r in range(self.num_splits[1]):
-                split_temp = 0.5 * np.random.random() + 1 / 2 / (self.num_splits[1] - r + 1)
-                upper_points.append(ucommon.get_point(np.array([upper_points[-1], self.boundary_coords[2]]), split_temp))
-                split_temp = 0.5 * np.random.random() + 1 / 2 / (self.num_splits[1] - r + 1)
-                lower_points.append(ucommon.get_point(np.array([lower_points[-1], self.boundary_coords[3]]), split_temp))
-            upper_points.append(self.boundary_coords[2])
-            lower_points.append(self.boundary_coords[3])
-            self.fields_coords = []
-            self.Graph = nx.Graph()
-            self.get_fields(upper_points, lower_points, self.num_splits[0])
+            # upper_points = [self.boundary_coords[1]]
+            # lower_points = [self.boundary_coords[0]]
+            # for r in range(self.num_splits[1]):
+            #     split_temp = 0.5 * np.random.random() + 1 / 2 / (self.num_splits[1] - r + 1)
+            #     upper_points.append(ucommon.get_point(np.array([upper_points[-1], self.boundary_coords[2]]), split_temp))
+            #     split_temp = 0.5 * np.random.random() + 1 / 2 / (self.num_splits[1] - r + 1)
+            #     lower_points.append(ucommon.get_point(np.array([lower_points[-1], self.boundary_coords[3]]), split_temp))
+            # upper_points.append(self.boundary_coords[2])
+            # lower_points.append(self.boundary_coords[3])
+            # self.fields_coords = []
+            # self.Graph = nx.Graph()
+            # self.get_fields(upper_points, lower_points, self.num_splits[0])
 
             self.Graph: nx.Graph = nx.compose_all([self.Graph] + [field.Graph for field in self.fields])
 
