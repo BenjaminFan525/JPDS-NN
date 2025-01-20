@@ -451,8 +451,12 @@ class arrangeSimulator():
         line_nodes = [[] for _ in arrangements]
         for idx, arrange in enumerate(arrangements):
             if len(arrange) == 0:
-                targets.append([self.field.Graph.nodes[self.field.starts[idx]]['coord']])
-                ori_working_list.append([False])
+                if np.allclose(self.field.Graph.nodes[self.field.starts[idx]]['coord'], self.field.Graph.nodes[self.field.ends[idx]]['coord']):
+                    targets.append([self.field.Graph.nodes[self.field.starts[idx]]['coord']])
+                    ori_working_list.append([False])
+                else:
+                    targets.append(self.field.get_path(f'start-{idx}', f'end-{idx}', 1, 1, True))
+                    ori_working_list.append([False, False])
                 continue
             lines_id[idx] = [line for line in arrange]
             targets.append(self.field.get_path(f'start-{idx}', self.field.working_line_list[arrange[0][0]], 1, arrange[0][1], True))

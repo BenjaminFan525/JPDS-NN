@@ -446,6 +446,8 @@ class multiField():
 
         self.starts = [self.starts[i] for i in range(len(self.starts)) if i not in veh_del]
         self.ends = [self.ends[i] for i in range(len(self.ends)) if i not in veh_del]
+        self.num_veh = len(self.starts)
+        self.num_endpoints = self.num_veh if self.ends is None else 2*self.num_veh
 
         self.make_working_graph(fields_sel)
 

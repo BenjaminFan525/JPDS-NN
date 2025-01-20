@@ -214,11 +214,13 @@ class MaGNNEncoder(Module):
             #    node_key_padding_mask = node_key_padding_mask[:, self.veh_dim:]
             
             veh_depot_attn = []
+            M = [torch.sum(~t).item() for t in veh_key_padding_mask]
+            mask = node_key_padding_mask.clone()
             for idx in range(veh.shape[1]):
-                mask = node_key_padding_mask.clone()
-                mask[:, :2*veh.shape[1]] = True
-                mask[:, idx] = False
-                mask[:, idx+veh.shape[1]] = False                  
+                for bidx in range(veh.shape[0]):
+                    mask[bidx, :2*M[bidx]] = True
+                    mask[bidx, idx] = False
+                    mask[bidx, idx+M[bidx]] = False                           
                 veh_depot_attn.append(self.cross_attn(veh, nodes, nodes, key_padding_mask=mask)[0][:,idx,:].unsqueeze(1))
 
             veh = torch.cat(veh_depot_attn, dim=1) + \

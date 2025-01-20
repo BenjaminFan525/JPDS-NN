@@ -31,21 +31,21 @@ def load_model(checkpoint, model_type='mdvrp'):
     ac.load_state_dict(checkpoint['model'])  
     ac.eval()
     return ac
+# data = "/home/fanyx/mdvrp/data/Gdataset/Task_test_debug/6_4/3_28_24"
+data = "/home/fanyx/mdvrp/data/Gdataset/Task_test_debug/6_6/7_29_24"
+# data = "/home/fanyx/mdvrp/experiment/case_study/4_4/0_39_24"
+# field_ia = load_dict(os.path.join(data, 'field.pkl'))
 
-data = "/home/fanyx/mdvrp/experiment/case_study/4_4/0_39_24"
-field_ia = load_dict(os.path.join(data, 'field.pkl'))
+field_ia = load_dict(os.path.join(data, 'field_ia.pkl'))
+field = load_dict(os.path.join(data, 'field.pkl'))
 
+car_cfg = load_dict(os.path.join(data, 'car_cfg.pkl'))
+# car_cfg = [{'vw': 2.5, 'vv': 4.5, 'cw': 0.008, 'cv': 0.006, 'tt': 0, 'min_R': 6},
+#             {'vw': 3, 'vv': 5, 'cw': 0.007, 'cv': 0.005, 'tt': 0, 'min_R': 6},
+#             {'vw': 3, 'vv': 5.5, 'cw': 0.008, 'cv': 0.006, 'tt': 0, 'min_R': 6},
+#             {'vw': 2, 'vv': 5, 'cw': 0.008, 'cv': 0.006, 'tt': 0, 'min_R': 6},
+#             {'vw': 3, 'vv': 6, 'cw': 0.01, 'cv': 0.008, 'tt': 0, 'min_R': 6},]
 
-car_cfg = [{'vw': 2.5, 'vv': 4.5, 'cw': 0.008, 'cv': 0.006, 'tt': 0, 'min_R': 6},
-            {'vw': 3, 'vv': 5, 'cw': 0.007, 'cv': 0.005, 'tt': 0, 'min_R': 6},
-            {'vw': 3, 'vv': 5.5, 'cw': 0.008, 'cv': 0.006, 'tt': 0, 'min_R': 6},
-            {'vw': 2, 'vv': 5, 'cw': 0.008, 'cv': 0.006, 'tt': 0, 'min_R': 6},
-            {'vw': 3, 'vv': 6, 'cw': 0.01, 'cv': 0.008, 'tt': 0, 'min_R': 6},]
-car_cfg_0 = [{'vw': 2.5, 'vv': 4.5, 'cw': 0.008, 'cv': 0.006, 'tt': 0, 'min_R': 0.0001},
-            {'vw': 3, 'vv': 5, 'cw': 0.007, 'cv': 0.005, 'tt': 0, 'min_R': 0.0001},
-            {'vw': 3, 'vv': 5.5, 'cw': 0.008, 'cv': 0.006, 'tt': 0, 'min_R': 0.0001},
-            {'vw': 2, 'vv': 5, 'cw': 0.008, 'cv': 0.006, 'tt': 0, 'min_R': 0.0001},
-            {'vw': 3, 'vv': 6, 'cw': 0.01, 'cv': 0.008, 'tt': 0, 'min_R': 0.0001},]
 algo = 'PPO-t'
 f = 't'
 
@@ -58,20 +58,20 @@ car_tensor = torch.tensor(np.array([[cur_car['vw'], cur_car['vv'],
 
 # ============================ MDVRP model ============================
 
-field = multiField(num_splits=[1, 1], 
-                       starts=['bound-2-1', 
-                               'bound-2-1', 
-                               'bound-2-1', 
-                               'bound-2-1', 
-                               'bound-2-1'],
-                       ends=['bound-2-1',
-                             'bound-2-1',
-                             'bound-2-1',
-                             'bound-2-1',
-                             'bound-2-1']
-                       )
+# field = multiField(num_splits=[1, 1], 
+#                        starts=['bound-2-1', 
+#                                'bound-2-1', 
+#                                'bound-2-1', 
+#                                'bound-2-1', 
+#                                'bound-2-1'],
+#                        ends=['bound-2-1',
+#                              'bound-2-1',
+#                              'bound-2-1',
+#                              'bound-2-1',
+#                              'bound-2-1']
+#                        )
 
-field.from_ia(field_ia)
+# field.from_ia(field_ia)
 # field.make_working_graph()
 
 ac = load_model(checkpoint)
@@ -124,22 +124,32 @@ print(f"Simulator paused")
 for idx, status in enumerate(simulator.simulator.car_status):
     print(f"Car {idx+1} | line {status['line']} | entry {status['entry']} | pos ({status['pos'][0]:3.2f}, {status['pos'][1]:3.2f}) | inline {status['inline']}")
 
-veh_del = [0, 3]
-num_veh = car_tensor.shape[0] - len(veh_del)
+veh_del = [0, 1, 2, 3]
+car_tensor = torch.tensor(np.array([[cur_car['vw'], cur_car['vv'],
+                cur_car['cw'], cur_car['cv'],
+                cur_car['tt']] for idx, cur_car in enumerate(car_cfg) if idx not in veh_del])).float()
+
+num_veh = car_tensor.shape[0]
 chosen_idx_full, chosen_entry_full = field.edit_fields(simulator.simulator.car_status, veh_del=veh_del)
 T_full, chosen_idx, chosen_entry = [], [], []
 free_line, free_entry = [], []
 veh_key_padding_mask = torch.zeros((1, len(car_tensor))).bool()
 for idx, (line, ent) in enumerate(zip(chosen_idx_full[0], chosen_entry_full[0])):
     if idx in veh_del:
-        T_full.append([[line[0] - 2*num_veh, ent[0]]])
-        veh_key_padding_mask[0, idx] = True
-        free_line.append(line[0])
-        free_entry.append(ent[0])
+        if len(line) and len(ent):
+            T_full.append([[line[0] - 2*num_veh, ent[0]]])
+            free_line.append(line[0])
+            free_entry.append(ent[0])
+        else:
+            T_full.append([])
     else:
         T_full.append([])
-        chosen_idx.append([line[0]])
-        chosen_entry.append([ent[0]])
+        if len(line) and len(ent):
+            chosen_idx.append([line[0]])
+            chosen_entry.append([ent[0]])
+        else:
+            chosen_idx.append([])
+            chosen_entry.append([])   
 chosen_idx.append(free_line)
 chosen_entry.append(free_entry)
 chosen_idx = [chosen_idx]
@@ -159,8 +169,10 @@ for idx, a in enumerate(T_full):
     if idx not in veh_del:
         T_full[idx] = T[t_idx]
         t_idx += 1
-field.starts = [f'start-{idx}' for idx in range(car_tensor.shape[0])]
-field.ends = [field.ends[0]]*car_tensor.shape[0]
+field.starts = [f'start-{idx}' for idx in range(len(car_cfg))]
+field.ends = [field.ends[0]]*len(car_cfg)
+field.num_veh = len(field.starts)
+field.num_endpoints = 2*field.num_veh
 field.make_working_graph()
 
 print(f"Simulator restarting...")
@@ -186,20 +198,22 @@ print(os.path.join(data, algo + '_veh' + ".mp4"))
 plt.close('all')
 
 # ============================ dynamic arrangement ============================
-field = multiField(num_splits=[1, 1], 
-                       starts=['bound-2-1', 
-                               'bound-2-1', 
-                               'bound-2-1', 
-                               'bound-2-1', 
-                               'bound-2-1'],
-                       ends=['bound-2-1',
-                             'bound-2-1',
-                             'bound-2-1',
-                             'bound-2-1',
-                             'bound-2-1']
-                       )
-
-field.from_ia(field_ia)
+# field = multiField(num_splits=[1, 1], 
+#                        starts=['bound-2-1', 
+#                                'bound-2-1', 
+#                                'bound-2-1', 
+#                                'bound-2-1', 
+#                                'bound-2-1'],
+#                        ends=['bound-2-1',
+#                              'bound-2-1',
+#                              'bound-2-1',
+#                              'bound-2-1',
+#                              'bound-2-1']
+#                        )
+# field_ia = load_dict(os.path.join(data, 'field.pkl'))
+# field.from_ia(field_ia)
+field_ia = load_dict(os.path.join(data, 'field_ia.pkl'))
+field = load_dict(os.path.join(data, 'field.pkl'))
 
 print(f"Simulator initializng...")
 simulator = arrangeSimulator(field, car_cfg)
@@ -211,8 +225,9 @@ print(f"Simulator paused")
 for idx, status in enumerate(simulator.simulator.car_status):
     print(f"Car {idx+1} | line {status['line']} | entry {status['entry']} | pos ({status['pos'][0]:3.2f}, {status['pos'][1]:3.2f}) | inline {status['inline']}")
 
+chosen_line = [[field_ia.working_line_list[line[0]] for line in simulator.simulator.traveled_line[idx]] for idx in range(len(car_cfg))]
 field.edit_fields(simulator.simulator.car_status, delete_lines=False)
-chosen_idx_full = [[[line[0]+1 for line in simulator.simulator.traveled_line[idx]] for idx in range(len(car_cfg))]]
+chosen_idx_full = [[[list(field_ia.working_graph.nodes()).index(line) for line in chosen_line[idx]] for idx in range(len(car_cfg))]]
 chosen_entry_full = [[[line[1] for line in simulator.simulator.traveled_line[idx]] for idx in range(len(car_cfg))]]
 
 for idx, status in enumerate(simulator.simulator.car_status):
@@ -220,17 +235,20 @@ for idx, status in enumerate(simulator.simulator.car_status):
         chosen_idx_full[0][idx].append(list(field_ia.working_graph.nodes()).index(status['line']))
         chosen_entry_full[0][idx].append(status['entry'])
 
-veh_del = [0, 3]
-num_veh = car_tensor.shape[0] - len(veh_del)
-T_full = [[] for _ in range(car_tensor.shape[0])]
+veh_del = [0, 1, 2, 3]
+car_tensor = torch.tensor(np.array([[cur_car['vw'], cur_car['vv'],
+                cur_car['cw'], cur_car['cv'],
+                cur_car['tt']] for idx, cur_car in enumerate(car_cfg) if idx not in veh_del])).float()
+num_veh = car_tensor.shape[0]
+T_full = [[] for _ in range(len(car_cfg))]
 chosen_idx, chosen_entry = [], []
 free_line, free_entry = [], []
 veh_key_padding_mask = torch.zeros((1, len(car_tensor))).bool()
 for idx, (line, ent, status) in enumerate(zip(chosen_idx_full[0], chosen_entry_full[0], simulator.simulator.car_status)):
     if idx in veh_del:
         if status['inline']:
-            T_full[idx].append([line[-1] - 1, ent[-1]])
-        veh_key_padding_mask[0, idx] = True
+            if len(line) and len(ent):
+                T_full[idx].append([line[-1] - 1, ent[-1]])
         free_line += line
         free_entry += ent
     else:
@@ -260,8 +278,8 @@ for idx, (a, c, status) in enumerate(zip(T_full, chosen_idx_full[0], simulator.s
             T_full[idx] = T_ia_2[t_idx][len(c):]
         t_idx += 1
 
-field.starts = [f'start-{idx}' for idx in range(car_tensor.shape[0])]
-field.ends = [field.ends[0]]*car_tensor.shape[0]
+field.starts = [f'start-{idx}' for idx in range(len(car_cfg))]
+field.ends = [field.ends[0]]*len(car_cfg)
 field.make_working_graph()
 
 print(f"Simulator restarting...")

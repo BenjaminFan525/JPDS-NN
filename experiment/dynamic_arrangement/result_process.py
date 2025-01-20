@@ -2,7 +2,7 @@ import os
 import numpy as np
 
 # 指定目录路径
-directory = '/home/fanyx/mdvrp/experiment/dynamic_arrangement/2025-01-18__21-21'
+directory = '/home/fanyx/mdvrp/experiment/dynamic_arrangement/2025-01-19__23-17'
 
 result_mdvrp = [[] for _ in range(6)]
 result_ia = [[] for _ in range(6)]

@@ -131,14 +131,15 @@ class Dubins:
                
                 ptr += 1
 
-            if len(targets[0]) == 2:
-                t = targets[1][:2] - targets[0][:2]
-                t = t / np.linalg.norm(t)
-                targets[0] = np.append(targets[0], np.arctan2(t[1], t[0]))
-            if len(targets[-1]) == 2:
-                t = targets[-1][:2] - targets[-2][:2]
-                t = t / np.linalg.norm(t)
-                targets[-1] = np.append(targets[-1], np.arctan2(t[1], t[0]))
+            if len(targets) > 1:
+                if len(targets[0]) == 2:
+                    t = targets[1][:2] - targets[0][:2]
+                    t = t / np.linalg.norm(t)
+                    targets[0] = np.append(targets[0], np.arctan2(t[1], t[0]))
+                if len(targets[-1]) == 2:
+                    t = targets[-1][:2] - targets[-2][:2]
+                    t = t / np.linalg.norm(t)
+                    targets[-1] = np.append(targets[-1], np.arctan2(t[1], t[0]))
 
             targets = np.array(targets)
 

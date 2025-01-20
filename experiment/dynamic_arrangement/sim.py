@@ -55,7 +55,7 @@ def simulate(data_loader, model, save_dir, model_type='mdvrp', stop_coeff=0.5, f
                 seq_enc, _, _, _, _, _, _ = model(bsz_data_ia, info, deterministic=True, criticize=False)
             Ts = list(map(ia_util.decode, seq_enc))
 
-        for idx, (T, field, car_cfg) in enumerate(zip(Ts, fields, car_cfgs)):
+        for idx, (T, field, field_ia, car_cfg) in enumerate(zip(Ts, fields, fields_ia, car_cfgs)):
             simulator = arrangeSimulator(field, car_cfg)
             simulator.init_simulation(T)
 
@@ -97,15 +97,26 @@ def simulate(data_loader, model, save_dir, model_type='mdvrp', stop_coeff=0.5, f
                                                     chosen_idx=chosen_idx, chosen_entry=chosen_entry)
                 T = decode(seq_enc[0])
             else:
+                chosen_line = [[field_ia.working_line_list[line[0]] for line in simulator.simulator.traveled_line[idx]] for idx in range(len(car_cfg))]
                 field.edit_fields(simulator.simulator.car_status, delete_lines=False)
-                chosen_idx = [[[line[0]+1 for line in simulator.simulator.traveled_line[idx]] for idx in range(len(car_cfg))]]
+                chosen_idx = [[[list(field_ia.working_graph.nodes()).index(line) for line in chosen_line[idx]] for idx in range(len(car_cfg))]]
                 chosen_entry = [[[line[1] for line in simulator.simulator.traveled_line[idx]] for idx in range(len(car_cfg))]]
+
+                for idx, status in enumerate(simulator.simulator.car_status):
+                    if status['inline']:
+                        chosen_idx[0][idx].append(list(field_ia.working_graph.nodes()).index(status['line']))
+                        chosen_entry[0][idx].append(status['entry'])
                 with torch.no_grad():
-                    seq_enc, _, _, _, _, _, _ = model(bsz_data, info, deterministic=True, criticize=False, 
+                    seq_enc, _, _, _, _, _, _ = model(bsz_data_ia, info, deterministic=True, criticize=False, 
                                                     force_chosen=True, 
                                                     chosen_idx=chosen_idx, chosen_entry=chosen_entry)                
-                T_ori = T
-                T = [a[len(c):] for a, c  in zip(T_ori, chosen_idx[0])]
+                T_ia_2 = ia_util.decode(seq_enc[0])
+                T = [[] for _ in T_ia_2]
+                for idx, (a, c, status)  in enumerate(zip(T_ia_2, chosen_idx[0], simulator.simulator.car_status)):
+                    if status['inline']:
+                        T[idx] = a[len(c)-1:]
+                    else:
+                        T[idx] = a[len(c):]
             
             simulator = arrangeSimulator(field, car_cfg)
             simulator.init_simulation(T)
