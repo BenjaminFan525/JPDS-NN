@@ -264,7 +264,7 @@ if __name__ == '__main__':
     import multiprocessing
 
     parser = argparse.ArgumentParser(description='Combinatormdvrpl Optimization')
-    parser.add_argument('--checkpoint', default='/home/fanyx/mdvrp/result/training_rl/ppo/2024-12-27__12-11/best_model31.pt')
+    parser.add_argument('--checkpoint', default='/home/fanyx/mdvrp/result/training_rl/ppo/2025-01-20__11-03/best_model32.pt')
     parser.add_argument('--checkpoint_ia', default='/home/fanyx/Intelligent-Agriculture/ia/algo/arrangement/runs_rl/ppo/2024-03-04__12-53_t/best_model39.pt')
     parser.add_argument('--test_data', nargs='*', default=['/home/fanyx/mdvrp/data/Gdataset/Task_test_1d'])
     parser.add_argument('--save_dir', type=str, default='/home/fanyx/mdvrp/experiment/dynamic_arrangement')

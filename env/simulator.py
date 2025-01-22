@@ -215,9 +215,9 @@ class Simulator:
     # Else return False.
     def step(self, a: np.ndarray):
         
-        assert a.shape == (len(self.car_list), 2) or a.shape == (2, len(self.car_list))
-        if a.shape == (2, len(self.car_list)):
-            a = a.T
+        # assert a.shape == (len(self.car_list), 2) or a.shape == (2, len(self.car_list))
+        # if a.shape == (2, len(self.car_list)):
+        #     a = a.T
 
         self.terminate = True
         for idx, car in enumerate(self.car_list):
@@ -290,10 +290,10 @@ class Simulator:
             ori_ax = len(ax.lines)
             if output_figure:
                 figures = []
-            # text = ax.text(0.01, 0.99, 'Initializing', 
-            #             horizontalalignment='left', 
-            #             verticalalignment='top',
-            #             transform=ax.transAxes)
+            text = ax.text(0.01, 0.99, 'Initializing', 
+                        horizontalalignment='left', 
+                        verticalalignment='top',
+                        transform=ax.transAxes)
         
         while not self.step(a):
             if render:
@@ -303,7 +303,8 @@ class Simulator:
                             ax.lines.pop()
                     self.render(ax, show = False, label=label)
                     # disp_str = ''.join([f"Car {idx+1} | line {status['line']} | pos ({status['pos'][0]:.2f}, {status['pos'][1]:.2f}) | inline {status['inline']}\n" for idx, status in enumerate(self.car_status)])
-                    # text.set_text(disp_str)
+                    disp_str = str(self.time)
+                    text.set_text(disp_str)
                     if output_figure:
                         canvas = FigureCanvasAgg(plt.gcf())
                         w, h = canvas.get_width_height()

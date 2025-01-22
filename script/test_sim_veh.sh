@@ -1,0 +1,9 @@
+/home/fanyx/anaconda3/envs/ia/bin/python /home/fanyx/mdvrp/experiment/dynamic_arrangement/sim_change_veh.py \
+        --test_data /home/fanyx/mdvrp/data/Gdataset/Task_test_1d \
+        --save_dir /home/fanyx/mdvrp/experiment/dynamic_arrangement \
+        --checkpoint /home/fanyx/mdvrp/result/training_rl/ppo/2025-01-20__11-03/best_model32.pt \
+        --checkpoint_ia /home/fanyx/Intelligent-Agriculture/ia/algo/arrangement/runs_rl/ppo/2024-03-04__12-53_t/best_model39.pt \
+        --batch_size 1 \
+        --stop_coeff 0.5 \
+        --fig_interval 20 \
+        --num_workers 18 \

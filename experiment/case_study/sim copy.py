@@ -55,23 +55,6 @@ car_tensor = torch.tensor(np.array([[cur_car['vw'], cur_car['vv'],
                 cur_car['cw'], cur_car['cv'],
                 cur_car['tt']] for cur_car in car_cfg])).float()
 
-# field = multiField(num_splits=[1, 1], 
-#                        starts=['bound-2-1', 
-#                                'bound-2-1', 
-#                                'bound-2-1', 
-#                                'bound-2-1', 
-#                                'bound-2-1'],
-#                        ends=['bound-2-1',
-#                              'bound-2-1',
-#                              'bound-2-1',
-#                              'bound-2-1',
-#                              'bound-2-1']
-#                        )
-
-# field.from_ia(field_ia)
-# field_list = [0, 3]
-# field.make_working_graph(field_list)
-# # field.make_working_graph()
 
 # ============================ MDVRP model ============================
 
@@ -169,7 +152,7 @@ simulator.init_simulation(T_ia, debug=True)
 # simulator.render_arrange()
 # plt.title(f'$s_P$={np.round(s, 2)}m, $t_P$={np.round(t, 2)}s, $c_P$={np.round(c, 2)}L', fontsize=20)
 
-simulator.simulator.time_teriminate = t1*0.5
+# simulator.simulator.time_teriminate = t1*0.5
 ax = simulator.field.render(working_lines=False, show=False, start=False)
 t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, True, True, True, True)
 print(f"Simulator paused")

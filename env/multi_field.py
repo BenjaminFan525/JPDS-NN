@@ -211,7 +211,9 @@ class multiField():
                                                     dis=self.whole_D_matrix[idx2, idx1],
                                                     edge_embed=torch.Tensor(self.whole_D_matrix[idx1, idx2].flatten()))
         self.ori = self.whole_D_matrix[:self.num_veh, self.num_endpoints:] # 各个 start 到各个作业行的距离矩阵
+        self.ori.transpose(0, 1, 3, 2)
         self.des = self.whole_D_matrix[self.num_veh:self.num_endpoints, self.num_endpoints:] # 各个 end 到各个作业行的距离矩阵
+        self.des.transpose(0, 1, 3, 2)
         self.D_matrix = self.whole_D_matrix[self.num_endpoints:, self.num_endpoints:] # 各个作业行之间的距离矩阵
         self.line_length = np.array(self.line_length[self.num_endpoints:])
 
