@@ -1,0 +1,15 @@
+max_grad_norm: 0.5
+batch_size: 64
+actor_lr: 0.0001 
+critic_lr: 0.0001
+ac_config: /home/fanyx/mdvrp/config/ac.yaml
+gnn_pretrain: True
+gnn_checkpoint: /home/fanyx/mdvrp/result/GNN_pretrain/2024-12-21__22-22/best_model979.pt
+gnn_freeze_epochs: 2
+anneal: True
+anneal_final: 0.1
+reward_coef:
+  s: 0.01
+  t: 0.01
+  c: 1
+valid_every: 20
