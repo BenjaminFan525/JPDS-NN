@@ -150,14 +150,14 @@ def train(model: PG, save_dir, train_data, valid_data, obj,
         for batch_idx, batch in enumerate(tqdm_data_loader):
             if total_iter % valid_every == 0:
                 # Save rendering of validation set tours
-                valid_dir = os.path.join(save_dir, 'valid', str(cur_epoch), str(total_iter))
+                valid_dir = os.path.join(save_dir, 'valid', str(cur_epoch+1), str(total_iter))
 
                 valid_loader.dataset.use_field = True
                 stc = validate(valid_loader, model, valid_dir, render=True)
                 valid_loader.dataset.use_field = False
 
                 with open(os.path.join(save_dir, 'log.txt'), 'a') as f:
-                    f.write(str(cur_epoch) + ' ' + str(total_iter) + ' ' + \
+                    f.write(str(cur_epoch+1) + ' ' + str(total_iter) + ' ' + \
                             str(total_iter * batch_size) + ' ' + \
                             str(stc['s']) + ' ' + str(stc['t']) + ' ' + str(stc['c']) + '\n')
 
@@ -169,7 +169,7 @@ def train(model: PG, save_dir, train_data, valid_data, obj,
                 # Save best model parameters
                 if (stc[obj] < best_reward) and cost_satisfied:
                     best_reward = stc[obj]
-                    save_path = os.path.join(save_dir, 'best_model' + str(cur_epoch) + '.pt')
+                    save_path = os.path.join(save_dir, 'best_model' + str(cur_epoch+1) + '.pt')
                     checkpoint = {
                         'epoch': cur_epoch,
                         'model': model.ac.state_dict(),
@@ -186,7 +186,7 @@ def train(model: PG, save_dir, train_data, valid_data, obj,
                 for key, val in best_cost.items():
                     if stc[key] < val:
                         best_cost[key] = stc[key]
-                        save_path = os.path.join(save_dir, 'best_model' + str(cur_epoch) + '_' + key + '.pt')
+                        save_path = os.path.join(save_dir, 'best_model' + str(cur_epoch+1) + '_' + key + '.pt')
                         checkpoint = {
                             'epoch': cur_epoch,
                             'model': model.ac.state_dict(),
@@ -284,7 +284,7 @@ def train(model: PG, save_dir, train_data, valid_data, obj,
         mean_reward = np.mean(cum_r[obj])
 
         # Save the weights      
-        save_path = os.path.join(checkpoint_dir, 'checkpoint_Epoch' + str(cur_epoch) + '.pt')
+        save_path = os.path.join(checkpoint_dir, 'checkpoint_Epoch' + str(cur_epoch+1) + '.pt')
         checkpoint = {
             'epoch': cur_epoch,
             'model': model.ac.state_dict(),
@@ -299,11 +299,11 @@ def train(model: PG, save_dir, train_data, valid_data, obj,
             })
         torch.save(checkpoint, save_path)
 
-        valid_dir = os.path.join(save_dir, 'valid', str(cur_epoch))
+        valid_dir = os.path.join(save_dir, 'valid', str(cur_epoch+1))
 
         stc = validate(valid_loader, model, valid_dir)
         
-        print('[Epoch' + str(cur_epoch) + ']' + 
+        print('[Epoch' + str(cur_epoch+1) + ']' + 
               'Mean epoch reward: %2.4f, ' \
               'vailid reward: %2.4f, took: %2.4fs '% \
               (mean_reward, stc[obj], time.time() - epoch_start))

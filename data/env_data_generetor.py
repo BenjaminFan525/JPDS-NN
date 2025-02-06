@@ -20,8 +20,8 @@ config = {
             '6': (320, 320),
         },
         's': { # everage 30
-            '1': (700, 800),
-            '2': (600, 700),
+            '1': (400, 500),
+            '2': (400, 600),
             '3': (500, 700),
             '4': (700, 700),
             '5': (700, 800),
@@ -36,9 +36,12 @@ config = {
             '10': (800, 900),
         },
         'L': {
+            '7': (1000, 1100),
             '8': (1150, 1150),
-            '10': (1100, 1150),
-            '12': (925, 925),
+            '9': (1150, 1250),
+            '10': (1250, 1400),
+            '11': (1250, 1300),
+            '12': (1300, 1300),
         }
     },
     '24': {
@@ -50,8 +53,8 @@ config = {
             '6': (600, 600),
         },
         's': {  # everage 30
-            '1': (1300, 1500),
-            '2': (1100, 1400),
+            '1': (1000, 1000),
+            '2': (1000, 1100),
             '3': (1000, 1300),
             '4': (1300, 1300),
             '5': (1300, 1500),
@@ -66,9 +69,12 @@ config = {
             '10': (1500, 1500)
         },
         'L': {
-            '8': (1950, 2000),
-            '10': (2100, 2100),
-            '12': (1925, 1925),
+            '7': (1750, 1800),
+            '8': (1800, 1800),
+            '9': (1800, 1900),
+            '10': (1800, 2100),
+            '11': (1850, 2000),
+            '12': (2000, 2000),
         }
     },
 }
@@ -100,11 +106,20 @@ def data_gen(data_num, field_num, veh_num, task_size, save_dir, save_ia, single_
     elif field_num == 6:
         splits = [2, 1]
         field_type = '#'
+    elif field_num == 7:
+        splits = [3, 1]
+        field_type = '#'
     elif field_num == 8:
         splits = [3, 1]
         field_type = '#'
+    elif field_num == 9:
+        splits = [2, 2]
+        field_type = '#'        
     elif field_num == 10:
-        splits = [5, 1]
+        splits = [4, 1]
+        field_type = '#'
+    elif field_num == 11:
+        splits = [3, 2]
         field_type = '#'
     elif field_num == 12:
         splits = [3, 2]
@@ -122,7 +137,7 @@ def data_gen(data_num, field_num, veh_num, task_size, save_dir, save_ia, single_
                                 starts=[field_ia.home for _ in range(veh_num)],
                                 ends=[field_ia.home for _ in range(veh_num)]) 
                 field.from_ia(field_ia)
-                if field_num == 3 or field_num == 5:
+                if field_num > 1 and field_num % 2 == 1:
                     field_ia.merge_field([0, 1])
                     field.starts=[field_ia.home for _ in range(veh_num)]
                     field.ends=[field_ia.home for _ in range(veh_num)]

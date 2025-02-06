@@ -62,20 +62,28 @@ def simulate(data_loader, model, model_ia, save_dir, stop_coeff=0.5, fig_interva
             with torch.no_grad():
                 seq_enc, _, _, _, _, _, _ = model(bsz_data, info, deterministic=True, criticize=False, )
             T = decode(seq_enc[0])
-
-            simulator = arrangeSimulator(field, car_cfg)
-            simulator.init_simulation(T, debug=True)
-            t, c, s, _, _, _, _ = simulator.simulate(None, False, False, False, False)
+            s, t, c = fit(field.D_matrix, 
+                          field.ori.transpose(0, 1, 3, 2), 
+                          field.des.transpose(0, 1, 3, 2),
+                          car_cfg, 
+                          field.line_length,
+                          T, 
+                          tS_t=False,
+                          type='all')
 
             pygdata = from_networkx(field_ia.working_graph, group_node_attrs=['embed'], group_edge_attrs=['edge_embed'])
             bsz_data_ia['graph'] = Batch.from_data_list([pygdata])
             with torch.no_grad():
                 seq_enc, _, _, _, _, _, _ = model_ia(bsz_data_ia, info, deterministic=True, criticize=False, )
             T_ia = ia_util.decode(seq_enc[0])            
-            
-            simulator = arrangeSimulator(field, car_cfg)
-            simulator.init_simulation(T_ia, debug=True)
-            t_ia, c_ia, s_ia, _, _, _, _ = simulator.simulate(None, False, False, False, False)            
+            _, t_ia, _ = fit(field_ia.D_matrix, 
+                          np.tile(field_ia.ori, (len(car_cfg), 1, 1, 1)), 
+                          np.tile(field_ia.ori, (len(car_cfg), 1, 1, 1)),
+                          car_cfg, 
+                          field_ia.line_length,
+                          T_ia, 
+                          tS_t=False,
+                          type='all')
             
             if t < t_ia:
                 T0 = T
