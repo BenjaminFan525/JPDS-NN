@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from env import arrangeSimulator
 import json
 from model.ac import GNNAC
-from ia.algo import MGGA
+from algo import MGGA
 import ia.algo.arrangement.models.ac as ia_model
 import ia.utils as ia_util
 import ia.env.simulator as ia_env
@@ -77,35 +77,35 @@ with torch.no_grad():
     seq_enc, _, _, _, _, _, _ = ac(data_t, info, deterministic=True, criticize=False, )
 T = decode(seq_enc[0])
 
-print(f"Simulator initializng...")
-simulator = arrangeSimulator(field, car_cfg)
-simulator.init_simulation(T)
-ax = simulator.field.render(working_lines=False, show=False, start=False)
-t1, c1, s1, car_time, car_dis, ax, figs = simulator.simulate(ax, True, True, True, False)
-print(f"Simulation result: s={np.round(s1, 2)}m, t={np.round(t1, 2)}s, c={np.round(c1, 2)}L")
+# print(f"Simulator initializng...")
+# simulator = arrangeSimulator(field, car_cfg)
+# simulator.init_simulation(T)
+# ax = simulator.field.render(working_lines=False, show=False, start=False)
+# t1, c1, s1, car_time, car_dis, ax, figs = simulator.simulate(ax, True, True, True, False)
+# print(f"Simulation result: s={np.round(s1, 2)}m, t={np.round(t1, 2)}s, c={np.round(c1, 2)}L")
  
-s, t, c = fit(field.D_matrix, 
-        field.ori.transpose(0, 1, 3, 2), 
-        field.des.transpose(0, 1, 3, 2),
-        car_cfg, 
-        field.line_length,
-        T, 
-        tS_t=False,
-        type='all')
+# s, t, c = fit(field.D_matrix, 
+#         field.ori.transpose(0, 1, 3, 2), 
+#         field.des.transpose(0, 1, 3, 2),
+#         car_cfg, 
+#         field.line_length,
+#         T, 
+#         tS_t=False,
+#         type='all')
 
-print(f"Fit result: s={np.round(s, 2)}m, t={np.round(t, 2)}s, c={np.round(c, 2)}L")
-save_dir = os.path.join(data, algo + "_mdvrp.mp4")
-if figs is not None:
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    videoWriter = cv2.VideoWriter(save_dir, fourcc, 12, (figs[0].shape[1], figs[0].shape[0]), True)
-    # map(videoWriter.write, figs)
-    for fig in figs:
-        videoWriter.write(fig)
-    videoWriter.release() 
-else:
-    print('error')
+# print(f"Fit result: s={np.round(s, 2)}m, t={np.round(t, 2)}s, c={np.round(c, 2)}L")
+# save_dir = os.path.join(data, algo + "_mdvrp.mp4")
+# if figs is not None:
+#     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+#     videoWriter = cv2.VideoWriter(save_dir, fourcc, 12, (figs[0].shape[1], figs[0].shape[0]), True)
+#     # map(videoWriter.write, figs)
+#     for fig in figs:
+#         videoWriter.write(fig)
+#     videoWriter.release() 
+# else:
+#     print('error')
     
-print(save_dir)
+# print(save_dir)
 
 # ============================ GA ============================
 print("GA initializing...")
@@ -115,7 +115,7 @@ T, best, log = GA.optimize(field.D_matrix,
                 car_cfg, 
                 field.line_length, 
                 field.des,
-                field.line_field_idx)
+                field.line_field_idx,) 
 
 simulator = arrangeSimulator(field, car_cfg)
 simulator.init_simulation(T)

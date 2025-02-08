@@ -39,8 +39,8 @@ def simulate(data_loader, model, model_GA, obj, save_dir, fig_interval = 10, pid
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    r_final = [[] for _ in range(7)]
-    r_final_ga = [[] for _ in range(7)]
+    r_final = [[] for _ in range(6)]
+    r_final_ga = [[] for _ in range(6)]
     tqdm_data_loader = tqdm(data_loader)
     tqdm_data_loader.set_description('Simulation')
     for batch_idx, batch in enumerate(tqdm_data_loader):
@@ -53,9 +53,9 @@ def simulate(data_loader, model, model_GA, obj, save_dir, fig_interval = 10, pid
             with torch.no_grad():
                 seq_enc, _, _, _, _, _, _ = model(bsz_data, info, deterministic=True, criticize=False)
             T = decode(seq_enc[0])
-            r_final[field.num_fields-6].append(fit(field.D_matrix, 
-                            field.ori.transpose(0, 1, 3, 2), 
-                            field.des.transpose(0, 1, 3, 2),
+            r_final[field.num_fields-7].append(fit(field.D_matrix, 
+                            field.ori, 
+                            field.des,
                             car_cfg, 
                             field.line_length,
                             T, 
@@ -66,21 +66,21 @@ def simulate(data_loader, model, model_GA, obj, save_dir, fig_interval = 10, pid
                 simulator = arrangeSimulator(field, car_cfg)
                 simulator.init_simulation(T)
                 simulator.render_arrange()
-                s, t, c = r_final[field.num_fields-6][-1]
+                s, t, c = r_final[field.num_fields-7][-1]
                 plt.title(f'$s_P$={np.round(s, 2)}m, $t_P$={np.round(t, 2)}s, $c_P$={np.round(c, 2)}L', fontsize=20)
                 plt.savefig(os.path.join(save_dir, f"proc{pid}_batch{batch_idx}_mdvrp.png"))
                 plt.close('all')
 
             T, best, log = model_GA.optimize(field.D_matrix, 
-                            field.ori.transpose(0, 1, 3, 2), 
+                            field.ori, 
                             car_cfg, 
                             field.line_length, 
-                            field.des.transpose(0, 1, 3, 2),
+                            field.des,
                             field.line_field_idx)
 
-            r_final_ga[field.num_fields-6].append(fit(field.D_matrix, 
-                            field.ori.transpose(0, 1, 3, 2), 
-                            field.des.transpose(0, 1, 3, 2),
+            r_final_ga[field.num_fields-7].append(fit(field.D_matrix, 
+                            field.ori, 
+                            field.des,
                             car_cfg, 
                             field.line_length,
                             T, 
@@ -91,7 +91,7 @@ def simulate(data_loader, model, model_GA, obj, save_dir, fig_interval = 10, pid
                 simulator = arrangeSimulator(field, car_cfg)
                 simulator.init_simulation(T)
                 simulator.render_arrange()
-                s, t, c = r_final_ga[field.num_fields-6][-1]
+                s, t, c = r_final_ga[field.num_fields-7][-1]
                 plt.title(f'$s_P$={np.round(s, 2)}m, $t_P$={np.round(t, 2)}s, $c_P$={np.round(c, 2)}L', fontsize=20)
                 plt.savefig(os.path.join(save_dir, f"proc{pid}_batch{batch_idx}_ga.png"))
                 plt.close('all')  
@@ -159,7 +159,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     now = time.strftime("%Y-%m-%d__%H-%M")
-    save_dir = os.path.join(args.save_dir, 'GA', now)
+    save_dir = os.path.join(args.save_dir, 'GA', now+'_GA_large')
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     

@@ -119,7 +119,8 @@ class MGGA:
         for name, value in kwargs.items():
             setattr(self, name, value)
 
-    def optimize(self, D, ori, car_cfg, S_cfg, des = None, line_field_idx = None):
+    def optimize(self, D, ori, car_cfg, S_cfg, des = None, line_field_idx = None,
+                 chosen_idx=None, chosen_entry=None, force_chosen: bool=False):
         if len(D.shape) == 4:
             assert D.shape[2] == D.shape[3] == 2
             self.entry = True
@@ -179,6 +180,8 @@ class MGGA:
                 if self.entry:
                     if random.random() < self.p_e_order:
                         child = self.m_entry_sort(child, D, ori)
+                if force_chosen:
+                    child = self.force_chosen(child, chosen_idx, chosen_entry)
 
                 children.append(child)
                 f_children.append(fit(D, ori, des, car_cfg, tS, self.decode(child), self.f))
@@ -397,6 +400,22 @@ class MGGA:
                                           T[idx_t][0], 
                                           1 - T[idx_t - 1][1]])
         return self.encode(Ts)
+
+    def force_chosen(self, gen, chosen_idx, chosen_entry):
+        for idx, (idxs, entrys) in enumerate(zip(chosen_idx, chosen_entry)):
+            for idx_, _ in zip(idxs, entrys):
+                idx_ -= 2*(len(gen['split'])+1)
+                for item in gen['tar']:
+                    if item[0] == idx_:
+                        gen['tar'].remove(item)  
+                        break
+        T = self.decode(gen)
+        for idx, (idxs, entrys) in enumerate(zip(chosen_idx, chosen_entry)):
+            for idx_, entry in zip(idxs, entrys):
+                idx_ -= 2*(len(gen['split'])+1)
+                if idx < len(T):
+                    T[idx].insert(0, [idx_, entry])
+        return self.encode(T)   
         
 if __name__ == "__main__":
     from ia.utils import load_dict
