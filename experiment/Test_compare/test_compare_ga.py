@@ -17,6 +17,7 @@ import ia.env.simulator as ia_env
 from matplotlib.animation import FuncAnimation
 import cv2
 from tqdm import tqdm
+import random
 
 def load_model(checkpoint, model_type='mdvrp'):
     cfg = os.path.join('/'.join(checkpoint.split('/')[:-1]), 'config.json')
@@ -34,11 +35,17 @@ def load_model(checkpoint, model_type='mdvrp'):
     ac.eval()
     return ac
 
+def random_arrangement(num_car, num_target):
+    gen = {'tar': [[x, int(np.round(random.random()))] for x in range(num_target)], 'split': np.random.choice(range(num_target + 1), num_car - 1, replace = True).tolist()}
+    random.shuffle(gen['tar'])
+    gen['split'].sort()
+    return ia_util.decode(gen)
 
 def simulate(data_loader, model, model_GA, obj, save_dir, fig_interval = 10, pid = 0):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
+    r_final_ra = [[] for _ in range(6)]
     r_final = [[] for _ in range(6)]
     r_final_ga = [[] for _ in range(6)]
     tqdm_data_loader = tqdm(data_loader)
@@ -49,6 +56,16 @@ def simulate(data_loader, model, model_GA, obj, save_dir, fig_interval = 10, pid
         car_cfg = car_cfgs[0]
 
         if len(car_cfg) > 1:
+
+            T = random_arrangement(field.ori.shape[:2][0], field.ori.shape[:2][1])
+            r_final_ra[field.num_fields-1].append(fit(field.D_matrix, 
+                            field.ori, 
+                            field.des,
+                            car_cfg, 
+                            field.line_length,
+                            T, 
+                            tS_t=False,
+                            type='all'))
 
             with torch.no_grad():
                 seq_enc, _, _, _, _, _, _ = model(bsz_data, info, deterministic=True, criticize=False)
@@ -96,13 +113,16 @@ def simulate(data_loader, model, model_GA, obj, save_dir, fig_interval = 10, pid
                 plt.savefig(os.path.join(save_dir, f"proc{pid}_batch{batch_idx}_ga.png"))
                 plt.close('all')  
 
-    r_flatten, r_flatten_ga = [], []
-    for f_num, (r, r_ga) in enumerate(zip(r_final, r_final_ga)):
+    r_flatten, r_flatten_ga, r_flatten_ra = [], [], []
+    r_fields = [[] for _ in range(6)]
+    for f_num, (r, r_ga, r_ra) in enumerate(zip(r_final, r_final_ga, r_final_ra)):
         if len(r) > 0:
             r_flatten += r
             r_flatten_ga += r_ga
+            r_flatten_ra += r_ra
             mean_r = np.mean(np.array(r), axis=0)
             mean_r_ga = np.mean(np.array(r_ga), axis=0)
+            mean_r_ra = np.mean(np.array(r_ra), axis=0)
             if obj == 't':
                 win_num = np.sum(np.array(r)[:, 1] < np.array(r_ga)[:, 1])
             elif obj == 's': 
@@ -111,13 +131,17 @@ def simulate(data_loader, model, model_GA, obj, save_dir, fig_interval = 10, pid
                 win_num = np.sum(np.array(r)[:, 2] < np.array(r_ga)[:, 2])
             win_num = np.sum(np.array(r)[:, 1] < np.array(r_ga)[:, 1])
             print(f"Testing result of {f_num+1} field(s):")
+            print(f"[RA]    | Distance:{mean_r_ra[0]:.2f} | Time: {mean_r_ra[1]:.2f} | Fuel: {mean_r_ra[2]:.2f} | Win rate: -%")            
             print(f"[mdvrp] | Distance:{mean_r[0]:.2f} | Time: {mean_r[1]:.2f} | Fuel: {mean_r[2]:.2f} | Win rate: {win_num/len(r)*100:.2f}%")
             print(f"[GA]    | Distance:{mean_r_ga[0]:.2f} | Time: {mean_r_ga[1]:.2f} | Fuel: {mean_r_ga[2]:.2f} | Win rate: {(1-win_num/len(r))*100:.2f}%")
+            r_fields[f_num] = [mean_r[0], mean_r[1], mean_r[2], mean_r_ga[0], mean_r_ga[1], mean_r_ga[2], mean_r_ra[0], mean_r_ra[1], mean_r_ra[2]]
 
     r_final = np.array(r_flatten)
     r_final_ga = np.array(r_flatten_ga)
+    r_final_ra = np.array(r_flatten_ra)
     mean_r = np.mean(r_final, axis=0)
     mean_r_ga = np.mean(r_final_ga, axis=0)
+    mean_r_ra = np.mean(r_final_ra, axis=0)
     win_num = np.sum(r_final[:, 1] < r_final_ga[:, 1]) / r_final.shape[0]
     stc = {
         's': mean_r[0],
@@ -136,6 +160,13 @@ def simulate(data_loader, model, model_GA, obj, save_dir, fig_interval = 10, pid
         f.write(' '.join(map(str, r_final_ga[:, 0].tolist())) + '\n')
         f.write(' '.join(map(str, r_final_ga[:, 1].tolist())) + '\n')
         f.write(' '.join(map(str, r_final_ga[:, 2].tolist())) + '\n')
+        f.write(' '.join(map(str, r_final_ra[:, 0].tolist())) + '\n')
+        f.write(' '.join(map(str, r_final_ra[:, 1].tolist())) + '\n')
+        f.write(' '.join(map(str, r_final_ra[:, 2].tolist())) + '\n')
+        for sublist in r_fields:
+            line = ",".join(map(str, sublist))
+            f.write(line + "\n")
+
     
     return stc
 

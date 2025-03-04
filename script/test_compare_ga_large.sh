@@ -6,4 +6,4 @@
         --obj t \
         --batch_size 1 \
         --fig_interval 100000 \
-        --num_workers 60 \
+        --num_workers 40 \

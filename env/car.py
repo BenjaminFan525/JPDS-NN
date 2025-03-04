@@ -1,3 +1,4 @@
+from matplotlib import markers
 import numpy as np
 import threading
 import yaml
@@ -396,23 +397,23 @@ class Robot(car):
             ])
             if show:
                 f1 = ax.plot(car_shape[:,0], car_shape[:,1], color = color, label=label)
-                f2 = ax.plot(self.state.x, self.state.y, marker = '.', color = color)
+                # f2 = ax.plot(self.state.x, self.state.y, marker = '.', color = color)
                 ax.plot([self.state.x-np.sin(self.state.psi)*self.working_width / 2, self.state.x+np.sin(self.state.psi)*self.working_width / 2],
                         [self.state.y+np.cos(self.state.psi)*self.working_width / 2, self.state.y-np.cos(self.state.psi)*self.working_width / 2],
                         color = color, 
-                        linewidth = 2)
-                if self.working:
-                    # ax.add_patch(
-                    #     plt.Rectangle(
-                    #         (car_shape[0, 0], car_shape[0, 1]), 
-                    #         self.K, 
-                    #         self.ave_v * self.T, 
-                    #         0
-                    #     )
-                    # )
-                    ax.add_artist(plt.Circle((self.state.x, self.state.y), self.working_width / 2, color=color, alpha=0.4, linewidth=0))
+                        linewidth = 1)
+                # if self.working:
+                #     # ax.add_patch(
+                #     #     plt.Rectangle(
+                #     #         (car_shape[0, 0], car_shape[0, 1]), 
+                #     #         self.K, 
+                #     #         self.ave_v * self.T, 
+                #     #         0
+                #     #     )
+                #     # )
+                #     ax.add_artist(plt.Circle((self.state.x, self.state.y), self.working_width / 2, color=color, alpha=0.4, linewidth=0))
                 # else:
-                ax.add_artist(plt.Circle((self.state.x, self.state.y), 6, color=color, linewidth=0))
+                ax.add_artist(plt.Circle((self.state.x, self.state.y), self.working_width*0.28, color=color, alpha=1, linewidth=0))
             if return_bound:
                 return (f1, f2), car_shape[:4]
         elif mode == 2:

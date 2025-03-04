@@ -71,7 +71,7 @@ def simulate(data_loader, model, model_GA, save_dir, stop_coeff=0.5, fig_interva
             t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, False, False, False, True)
             
         chosen_idx, chosen_entry = field.edit_fields(simulator.simulator.car_status)
-        if len(field.line_length) < len(car_cfg):
+        if len(field.line_length) <= len(car_cfg):
             continue
         pygdata = from_networkx(field.working_graph, group_node_attrs=['embed'], group_edge_attrs=['edge_embed'])
         bsz_data['graph'] = Batch.from_data_list([pygdata])

@@ -204,15 +204,6 @@ class MaGNNEncoder(Module):
         veh = self.veh_attn(veh, veh_key_padding_mask)
         
         if self.cross_attn_en:
-            # veh_depot_attn = [self.cross_attn(veh, nodes[idx], nodes[idx], key_padding_mask=node_key_padding_mask[idx])[0][:,idx,:] for idx in range(self.depot_dim)]
-            # veh = torch.cat(veh_depot_attn, dim=0).unsqueeze(0) + \
-            #     veh + self.activation(self.ff(veh))
-            
-            # if self.end_en:
-            #    endpoint_nodes = nodes[:, :2*self.veh_dim, :] 
-            #    nodes = torch.cat([endpoint_nodes[:, 0::2, :]+endpoint_nodes[:, 1::2, :], nodes[:, 2*self.veh_dim:, :]], dim=1)
-            #    node_key_padding_mask = node_key_padding_mask[:, self.veh_dim:]
-            
             veh_depot_attn = []
             M = [torch.sum(~t).item() for t in veh_key_padding_mask]
             mask = node_key_padding_mask.clone()
@@ -225,9 +216,6 @@ class MaGNNEncoder(Module):
 
             veh = torch.cat(veh_depot_attn, dim=1) + \
                 veh + self.activation(self.ff(veh))
-
-            # veh = self.cross_attn(veh, nodes, nodes, key_padding_mask=node_key_padding_mask)[0] + \
-            #     veh + self.activation(self.ff(veh))
 
 
         max_veh = torch.zeros((veh.shape[0], 1, veh.shape[-1]), device=veh.device)

@@ -35,6 +35,11 @@ def load_model(checkpoint, model_type='mdvrp'):
     ac.eval()
     return ac
 
+def random_arrangement(num_car, num_target):
+    gen = {'tar': [[x, int(np.round(random.random()))] for x in range(num_target)], 'split': np.random.choice(range(num_target + 1), num_car - 1, replace = True).tolist()}
+    random.shuffle(gen['tar'])
+    gen['split'].sort()
+    return ia_util.decode(gen)
 
 def simulate(data_loader, model, model_GA, save_dir, stop_coeff=0.5, fig_interval = 10, pid = 0):
     if not os.path.exists(save_dir):
@@ -75,10 +80,10 @@ def simulate(data_loader, model, model_GA, save_dir, stop_coeff=0.5, fig_interva
         simulator.simulator.time_teriminate = t*stop_coeff
         if batch_idx % fig_interval == 0:
             ax = simulator.field.render(working_lines=False, show=False, start=False)
-            t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, True, False, False, True)
+            t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, True, False, False, False)
         else:
             ax = None
-            t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, False, False, False, True)
+            t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, False, False, False, False)
 
         chosen_idx, chosen_entry = field.edit_fields(simulator.simulator.car_status)
         if len(field.line_length) < len(car_cfg):
@@ -98,18 +103,18 @@ def simulate(data_loader, model, model_GA, save_dir, stop_coeff=0.5, fig_interva
             [ax.plot(field.Graph.nodes[start]['coord'][0], 
                                 field.Graph.nodes[start]['coord'][1], 
                                 '*y', 
-                                markersize=20) for start in field.starts]
-            t2, c2, s2, car_time, car_dis, ax, figs2 = simulator.simulate(ax, True, False, False, False)
-            plt.title(f'$s_P$={np.round(s1+s2, 2)}m, $t_P$={np.round(t1+t2, 2)}s, $c_P$={np.round(c1+c2, 2)}L', fontsize=20)
+                                markersize=12) for start in field.starts]
+            t2, c2, s2, car_time, car_dis, ax, figs2 = simulator.simulate(ax, True, False, False, True)
+            plt.title(f'$s_P$={np.round(s2, 2)}m, $t_P$={np.round(t2, 2)}s, $c_P$={np.round(c2, 2)}L', fontsize=20)
             plt.savefig(os.path.join(save_dir, f"proc{pid}_batch{batch_idx}_mdvrp_rec.png"))
             plt.close('all')
         else:
             ax = None
-            t2, c2, s2, car_time, car_dis, ax, figs2 = simulator.simulate(ax, False, False, False, False)            
+            t2, c2, s2, car_time, car_dis, ax, figs2 = simulator.simulate(ax, False, False, False, True)            
         
-        r_final[0].append(np.round(s1+s2, 2))
-        r_final[1].append(np.round(t1+t2, 2))
-        r_final[2].append(np.round(c1+c2, 2))   
+        r_final[0].append(np.round(s2, 2))
+        r_final[1].append(np.round(t2, 2))
+        r_final[2].append(np.round(c2, 2))   
             
         bsz_data, info, fields, car_cfgs, _ = deepcopy(batch)
         field = fields[0]
@@ -122,14 +127,13 @@ def simulate(data_loader, model, model_GA, save_dir, stop_coeff=0.5, fig_interva
 
         if batch_idx % fig_interval == 0:
             ax = simulator.field.render(working_lines=False, show=False, start=False)
-            t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, True, False, False, True)
+            t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, True, False, False, False)
         else:
             ax = None
-            t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, False, False, False, True)
+            t1, c1, s1, car_time, car_dis, ax, figs1 = simulator.simulate(ax, False, False, False, False)
         chosen_idx, chosen_entry = field.edit_fields(simulator.simulator.car_status)
 
-        GA = MGGA(f = 't', order = True, gen_size=100, max_iter=100)
-        T, best, log = GA.optimize(field.D_matrix, 
+        T, best, log = model_GA.optimize(field.D_matrix, 
                         field.ori, 
                         car_cfg, 
                         field.line_length, 
@@ -143,18 +147,18 @@ def simulate(data_loader, model, model_GA, save_dir, stop_coeff=0.5, fig_interva
             [ax.plot(field.Graph.nodes[start]['coord'][0], 
                                 field.Graph.nodes[start]['coord'][1], 
                                 '*y', 
-                                markersize=20) for start in field.starts]
-            t2, c2, s2, car_time, car_dis, ax, figs2 = simulator.simulate(ax, True, False, False, False)
-            plt.title(f'$s_P$={np.round(s1+s2, 2)}m, $t_P$={np.round(t1+t2, 2)}s, $c_P$={np.round(c1+c2, 2)}L', fontsize=20)
+                                markersize=12) for start in field.starts]
+            t2, c2, s2, car_time, car_dis, ax, figs2 = simulator.simulate(ax, True, False, False, True)
+            plt.title(f'$s_P$={np.round(s2, 2)}m, $t_P$={np.round(t2, 2)}s, $c_P$={np.round(c2, 2)}L', fontsize=20)
             plt.savefig(os.path.join(save_dir, f"proc{pid}_batch{batch_idx}_ga_rec.png"))
             plt.close('all')
         else:
             ax = None
-            t2, c2, s2, car_time, car_dis, ax, figs2 = simulator.simulate(ax, False, False, False, False)
+            t2, c2, s2, car_time, car_dis, ax, figs2 = simulator.simulate(ax, False, False, False, True)
 
-        r_final_ga[0].append(np.round(s1+s2, 2))
-        r_final_ga[1].append(np.round(t1+t2, 2))
-        r_final_ga[2].append(np.round(c1+c2, 2))       
+        r_final_ga[0].append(np.round(s2, 2))
+        r_final_ga[1].append(np.round(t2, 2))
+        r_final_ga[2].append(np.round(c2, 2))       
             
     r_final = np.array(r_final)
     r_final_ga = np.array(r_final_ga)
@@ -192,6 +196,7 @@ if __name__ == '__main__':
     parser.add_argument('--checkpoint', default='/home/fanyx/mdvrp/result/training_rl/ppo/2025-02-02__08-36__t/best_model38.pt')
     parser.add_argument('--test_data', nargs='*', default=['/home/fanyx/mdvrp/data/Gdataset/Task_test_debug'])
     parser.add_argument('--save_dir', type=str, default='/home/fanyx/mdvrp/experiment/dynamic_arrangement')
+    parser.add_argument('--obj', type=str, default='t')
     parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--fig_interval', type=int, default=1)
     parser.add_argument('--stop_coeff', type=float, default=0.5)
@@ -222,8 +227,9 @@ if __name__ == '__main__':
     # 定义任务函数
     def task(idx):
         ac = load_model(args.checkpoint, model_type='mdvrp')
-        GA = MGGA(f = 't', order = True, gen_size=100, max_iter=100)
-        stc = simulate(dataloaders[idx], ac, GA, save_dir, stop_coeff=args.stop_coeff, fig_interval=args.fig_interval, pid=idx)
+        GA = MGGA(f = args.obj, order = True, gen_size=100, max_iter=100)
+        stc = simulate(dataloaders[idx], ac, GA, save_dir, stop_coeff=args.stop_coeff, 
+                       fig_interval=args.fig_interval, pid=idx)
         print(f"[mdvrp] | Distance:{stc['s']:.2f} | Time: {stc['t']:.2f} | Fuel: {stc['c']:.2f}")
         print(f"[GA]    | Distance:{stc['s_ga']:.2f} | Time: {stc['t_ga']:.2f} | Fuel: {stc['c_ga']:.2f}")
 

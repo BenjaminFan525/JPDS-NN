@@ -7,5 +7,5 @@
         --checkpoint /home/fanyx/mdvrp/result/training_rl/ppo/2025-02-02__08-36__t/best_model38.pt \
         --batch_size 1 \
         --stop_coeff 0.5 \
-        --fig_interval 1000 \
-        --num_workers 25 \
+        --fig_interval 10000 \
+        --num_workers 50 \

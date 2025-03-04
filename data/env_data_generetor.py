@@ -145,7 +145,7 @@ def data_gen(data_num, field_num, veh_num, task_size, save_dir, save_ia, single_
             else:
                 field = multiField(splits, type=field_type, width = (width, width), working_width=working_width,
                                 num_starts=veh_num, num_ends=veh_num, single_end=single_end) 
-                if field_num == 3 or field_num == 5:
+                if field_num > 1 and field_num % 2 == 1:
                     field.merge_field([0, 1], num_starts=veh_num, num_ends=veh_num)
             
             line_nums = [f.num_working_lines for f in field.fields]

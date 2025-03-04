@@ -14,11 +14,11 @@ from typing import Union, List, Optional
 COLORS = (
     [
         # deepmind style
-        'red',
+        '#d61600',
+        '#002c7c',
+        '#18754a',
+        '#8700aa',
         'yellow',
-        'black',
-        'green',
-        'purple',
         'blue',
         'orange',
         # '#0072B2',
@@ -171,6 +171,8 @@ class Simulator:
         self.lines_id = lines_id
         self.field = field
         self.time_teriminate = time_teriminate
+        self.dynamic_terminate = False
+        self.veh_terminate_idx = []
         # self.car_status = ['home', [0, 0]]*len(car_list)
         self.car_status = [{'line': self.field.nodes_list[0+idx], 'entry': None, 'pos': path[0][0], 'inline': False, 'teriminate': False, 'traveled': []} for idx, _ in enumerate(range(len(car_list)))]
         self.traveled_line = [[] for _ in range(len(car_list))]
@@ -247,6 +249,15 @@ class Simulator:
                     elif self.time_teriminate and self.time > self.time_teriminate:
                         self.car_status[idx]['teriminate'] = True
                         car.stop()
+                    elif self.dynamic_terminate and 'end' in self.car_status[idx]['line']:
+                        self.car_status[idx]['teriminate'] = True
+                        self.tracking_vector_list[idx] = None
+                        car.stop()  
+                        if idx in self.veh_terminate_idx:
+                            for status in self.car_status:
+                                status['teriminate'] = True                 
+                    elif self.car_status[idx]['teriminate']:
+                        car.stop()
                     else:
                         self.terminate = False
                         self.car_status[idx]['teriminate'] = False
@@ -297,7 +308,7 @@ class Simulator:
         
         while not self.step(a):
             if render:
-                if self.steps % 50 == 0:
+                if self.steps % 20 == 0:
                     if update:
                         while len(ax.lines) > ori_ax:
                             ax.lines.pop()
@@ -343,7 +354,7 @@ class Simulator:
                 car.plot(color = COLORS[idx % len(COLORS)], mode = 1, ax = ax, label=f'Veh{idx+1}')
                 ax.legend(fontsize=16, loc='lower left')
             else:
-                car.plot(color = COLORS[idx % len(COLORS)], mode = 1, ax = ax)
+                car.plot(color = '#646464', mode = 1, ax = ax)
 
         # print(self.working_direction)   
         if show:
@@ -502,9 +513,11 @@ class arrangeSimulator():
             first_dir_tmp = path[1] - path[0]
             first_dir[idx] = np.arctan2(first_dir_tmp[1], first_dir_tmp[0])
 
+        init_pos = [[self.field.Graph.nodes[self.field.starts[idx]]['coord'][0], self.field.Graph.nodes[self.field.starts[idx]]['coord'][1]] for idx in range(len(self.car_cfg))]
+        
         cars = [Robot({'car_model': "car3", 'working_width': self.field.working_width, **cfg}, 
-                 state_ini=[path[0, 0], path[0, 1], 0, 0, f_dir, 0], debug=debug) 
-            for path, f_dir, cfg in zip(self.paths, first_dir, self.car_cfg)]
+                 state_ini=[pos[0], pos[1], 0, 0, f_dir, 0], debug=debug) 
+            for path, f_dir, cfg, pos in zip(self.paths, first_dir, self.car_cfg, init_pos)]
             
         self.simulator = Simulator(self.paths, cars, line_nodes, lines_id, self.field, working_list, max_step=1000000)
         self.simulator.set_drive_mode(drive_mode)

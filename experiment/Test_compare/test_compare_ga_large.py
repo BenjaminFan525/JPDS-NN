@@ -110,7 +110,7 @@ def simulate(data_loader, model, model_GA, obj, save_dir, fig_interval = 10, pid
             elif obj == 'c':
                 win_num = np.sum(np.array(r)[:, 2] < np.array(r_ga)[:, 2])
             win_num = np.sum(np.array(r)[:, 1] < np.array(r_ga)[:, 1])
-            print(f"Testing result of {f_num+6} field(s):")
+            print(f"Testing result of {f_num+7} field(s):")
             print(f"[mdvrp] | Distance:{mean_r[0]:.2f} | Time: {mean_r[1]:.2f} | Fuel: {mean_r[2]:.2f} | Win rate: {win_num/len(r)*100:.2f}%")
             print(f"[GA]    | Distance:{mean_r_ga[0]:.2f} | Time: {mean_r_ga[1]:.2f} | Fuel: {mean_r_ga[2]:.2f} | Win rate: {(1-win_num/len(r))*100:.2f}%")
 
@@ -183,7 +183,7 @@ if __name__ == '__main__':
     # 定义任务函数
     def task(idx):
         ac = load_model(args.checkpoint, model_type='mdvrp')
-        GA = MGGA(f = args.obj, order = True, gen_size=200, max_iter=200)
+        GA = MGGA(f = args.obj, order = True, gen_size=100, max_iter=100)
         stc = simulate(dataloaders[idx], ac, GA, args.obj, save_dir, fig_interval=args.fig_interval, pid=idx)
         print(f"Testing result of all fields:")
         print(f"[mdvrp] | Distance:{stc['s']:.2f} | Time: {stc['t']:.2f} | Fuel: {stc['c']:.2f} | Win rate: {stc['win_rate']*100:.2f}%")

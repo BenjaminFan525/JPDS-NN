@@ -300,15 +300,15 @@ class multiField():
             [ax.plot(self.Graph.nodes[start]['coord'][0], 
                     self.Graph.nodes[start]['coord'][1], 
                     '*y', 
-                    markersize=20) for start in self.starts]
+                    markersize=12) for start in self.starts]
         if self.ends is not None and end:
             [ax.plot(self.Graph.nodes[end]['coord'][0], 
                     self.Graph.nodes[end]['coord'][1], 
                     'vr', 
-                    markersize=20) for end in self.ends]
+                    markersize=12) for end in self.ends]
         
-        ax.set_xlabel('x(m)', fontsize=20)
-        ax.set_ylabel('y(m)', fontsize=20)
+        ax.set_xlabel('x(m)', fontsize=16)
+        ax.set_ylabel('y(m)', fontsize=16)
         if show:
             plt.show()
         return ax

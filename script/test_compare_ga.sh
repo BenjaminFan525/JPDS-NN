@@ -4,8 +4,8 @@
                 /home/fanyx/mdvrp/data/Gdataset/Task_test_multifield/single_depot \
                 /home/fanyx/mdvrp/data/Gdataset/Task_test_multifield/single_end \
         --save_dir experiment/Test_compare \
-        --checkpoint /home/fanyx/mdvrp/result/training_rl/ppo/2025-02-02__08-36__t/best_model38.pt \
-        --obj t \
+        --checkpoint /home/fanyx/mdvrp/result/training_rl/ppo/2025-02-07__06-10__s/best_model34.pt \
+        --obj s \
         --batch_size 1 \
         --fig_interval 100000 \
-        --num_workers 72 \
+        --num_workers 75 \
